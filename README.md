@@ -254,4 +254,5 @@ If you use this code in your research, please cite:
 
 ## Contact
 
-For questions or collaboration: [your-email@example.com]
+For questions or collaboration: 
+[pietroscik@gmail.com]
