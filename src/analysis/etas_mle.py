@@ -3,26 +3,31 @@ import numpy as np
 from scipy.optimize import minimize
 
 # -----------------------------
-# ETAS intensity function
+# ETAS intensity function (vectorized)
 # -----------------------------
 
-def intensity(t, times, mags, mu, K, alpha, c, p, M0=0.0):
-
+def intensity_vectorized(t, times, mags, mu, K, alpha, c, p, M0=0.0):
+    """Vectorized intensity calculation for better performance."""
+    
     lam = mu
-
-    for ti, mi in zip(times, mags):
-
-        dt = t - ti
-        if dt <= 0:
-            continue
-
-        lam += K * np.exp(alpha * (mi - M0)) * (dt + c) ** (-p)
-
+    
+    # Calculate dt for all previous events at once
+    dt = t - times
+    mask = dt > 0
+    
+    if np.any(mask):
+        valid_dt = dt[mask]
+        valid_mags = mags[mask]
+        
+        # Vectorized kernel calculation
+        contributions = K * np.exp(alpha * (valid_mags - M0)) * (valid_dt + c) ** (-p)
+        lam += np.sum(contributions)
+    
     return lam
 
 
 # -----------------------------
-# Log-likelihood
+# Log-likelihood (optimized)
 # -----------------------------
 
 def log_likelihood(params, times, mags):
@@ -36,24 +41,25 @@ def log_likelihood(params, times, mags):
 
     ll = 0.0
 
-    # likelihood sum over events
+    # likelihood sum over events (using vectorized intensity)
     for i in range(n):
-
-        lam = intensity(times[i], times[:i], mags[:i], mu, K, alpha, c, p)
+        
+        lam = intensity_vectorized(times[i], times[:i], mags[:i], mu, K, alpha, c, p)
 
         if lam <= 0:
             continue
 
         ll += np.log(lam)
 
-    # integral approximation (discrete grid)
+    # integral approximation (discrete grid - reduced resolution for speed)
     t_min, t_max = times[0], times[-1]
-    grid = np.linspace(t_min, t_max, 200)
+    grid_size = min(100, n)  # Limit grid size
+    grid = np.linspace(t_min, t_max, grid_size)
 
     integral = 0.0
 
     for t in grid:
-        integral += intensity(t, times, mags, mu, K, alpha, c, p)
+        integral += intensity_vectorized(t, times, mags, mu, K, alpha, c, p)
 
     integral *= (t_max - t_min) / len(grid)
 
@@ -92,7 +98,8 @@ def fit_etas(df):
         x0,
         args=(times, mags),
         bounds=bounds,
-        method="L-BFGS-B"
+        method="L-BFGS-B",
+        options={'maxiter': 100}  # Limit iterations
     )
 
     return result
