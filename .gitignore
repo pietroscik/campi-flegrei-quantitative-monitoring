@@ -1,8 +1,4 @@
-```gitignore
-# Compiled Python files
-*.pyc
+```
 __pycache__/
-
-# Figures (if they are generated)
-figures/
+*.pyc
 ```
