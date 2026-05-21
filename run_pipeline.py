@@ -28,7 +28,7 @@ def pipeline():
     try:
         # 1. INGESTION
         logging.info("Step 1: Ingestion...")
-        end = datetime.utcnow()
+        end = datetime.now()
         start = end - timedelta(days=365)
 
         df = fetch_ingv_events(
