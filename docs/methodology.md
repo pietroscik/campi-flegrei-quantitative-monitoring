@@ -152,10 +152,63 @@ Multi-Signal Fusion → Early Warning → ETAS MLE → Outputs
 - `figures/04_magnitude_distribution_stability.png` - Magnitude histograms by time windows
 - `figures/05_unrest_index.png` - Composite unrest index with thresholds
 - `figures/06_summary_dashboard.png` - All-in-one summary panel
+- `figures/07_hybrid_comparison.png` - Statistical vs Deep Learning comparison
 
 ---
 
-## 10. Reproducibility
+## 10. Deep Learning Extensions
+
+### 10.1 LSTM for Non-Linear Forecasting
+
+Long Short-Term Memory (LSTM) networks address limitations of linear models during rapid bradyseismic acceleration:
+
+**Architecture:**
+- Input: Sequence of length $L=30$ days with multi-dimensional features
+- Hidden layers: 2 stacked LSTM layers (64 and 32 units) with Layer Normalization
+- Output: Forecast horizon $H=7$ days
+- Regularization: Dropout (0.2) and early stopping (patience=15)
+
+**Training protocol:**
+- Optimizer: Adam (learning rate = 0.001, ReduceLROnPlateau)
+- Loss: Mean Squared Error (MSE)
+- Validation: Expanding window cross-validation (5 folds)
+
+### 10.2 Variational Autoencoder for Anomaly Detection
+
+VAEs provide unsupervised detection of novel precursory patterns:
+
+**Encoder architecture:**
+- Input: 7-dimensional feature vector (seismicity rate, magnitude statistics, depth, energy)
+- Hidden layers: [32, 16] with Batch Normalization and Dropout
+- Latent space: 8 dimensions (probabilistic: mean + log-variance)
+
+**Decoder architecture:**
+- Symmetric to encoder
+- Output: Reconstruction of input features
+
+**Anomaly scoring:**
+$$\text{Anomaly Score} = \frac{||x - \hat{x}||^2 - \mu_{error}}{\sigma_{error}}$$
+
+Threshold set at 95th percentile of training reconstruction errors.
+
+### 10.3 Hybrid Validation Framework
+
+Recursive backtesting compares statistical and deep learning models:
+
+**Metrics:**
+- **RMSE, MAE**: Forecasting accuracy
+- **AICc**: Model selection (statistical models only)
+- **F1-Score**: Anomaly detection performance
+- **Reconstruction Error**: VAE anomaly indicator
+
+**Validation protocol:**
+- Expanding window: minimum 100 samples training, 30 samples test
+- 5 consecutive folds
+- No look-ahead bias (strict temporal ordering)
+
+---
+
+## 11. Reproducibility
 
 All analyses can be reproduced by executing:
 
