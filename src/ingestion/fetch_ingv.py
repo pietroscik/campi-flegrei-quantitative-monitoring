@@ -10,8 +10,8 @@ def fetch_ingv_events(starttime, endtime, minmag=0.0, maxlat=None, minlat=None,
 
     params = {
         "format": "geojson",
-        "starttime": starttime,
-        "endtime": endtime,
+        "starttime": starttime.strftime("%Y-%m-%dT%H:%M:%S") if isinstance(starttime, datetime) else starttime,
+        "endtime": endtime.strftime("%Y-%m-%dT%H:%M:%S") if isinstance(endtime, datetime) else endtime,
         "minmagnitude": minmag
     }
 
@@ -38,10 +38,14 @@ def fetch_ingv_events(starttime, endtime, minmag=0.0, maxlat=None, minlat=None,
         props = f["properties"]
         geom = f["geometry"]
 
-        # handle time conversion properly
+        # handle time conversion properly - INGV returns ISO format string in 'time' property
         time_val = props.get("time")
         if time_val is not None:
-            time_val = pd.to_datetime(time_val, unit="ms", errors="coerce")
+            # Try parsing as ISO format string first
+            try:
+                time_val = pd.to_datetime(time_val, errors="coerce")
+            except:
+                time_val = None
 
         rows.append({
             "time": time_val,
@@ -73,8 +77,8 @@ if __name__ == "__main__":
     start = end - timedelta(days=365)  # ultimo anno (puoi cambiare)
 
     df = fetch_ingv_events(
-        starttime=start.isoformat(),
-        endtime=end.isoformat(),
+        starttime=start,
+        endtime=end,
         minmag=0.0,
         maxlat=41.2,
         minlat=40.7,
