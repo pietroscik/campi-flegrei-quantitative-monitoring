@@ -68,5 +68,5 @@ def run_anomaly(input_path="data/processed/b_value_rolling.csv"):
     return df
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_anomaly()

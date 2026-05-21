@@ -1,0 +1,19 @@
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data files (processed data should typically be gitignored)
+data/processed/
+data/external/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+```

@@ -79,5 +79,5 @@ def run_b_analysis(input_path="data/processed/catalog_clean.csv"):
     return global_b, rolling
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_b_analysis()

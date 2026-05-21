@@ -76,5 +76,5 @@ def build_catalog(raw_path, output_path="data/processed/catalog_clean.csv"):
     return df
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     build_catalog("data/raw/ingv_events.csv")

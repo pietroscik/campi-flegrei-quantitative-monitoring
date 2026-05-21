@@ -87,5 +87,5 @@ def run_etas(input_path="data/processed/catalog_clean.csv"):
     return df
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_etas()
