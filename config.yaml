@@ -1,0 +1,22 @@
+data:
+  bbox:
+    min_lat: 40.75
+    max_lat: 40.95
+    min_lon: 14.05
+    max_lon: 14.25
+
+b_value:
+  window: 100
+  m0: 0.0
+
+anomaly:
+  z_threshold: 2
+  quantile_low: 0.05
+  quantile_high: 0.95
+
+etas:
+  mu: 0.1
+  K: 0.5
+  alpha: 1.0
+  c: 0.01
+  p: 1.2
