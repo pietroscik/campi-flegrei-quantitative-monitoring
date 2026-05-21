@@ -28,8 +28,26 @@ def pipeline():
     try:
         # 1. INGESTION
         logging.info("Step 1: Ingestion...")
+        
+        # Use configurable temporal window (default to long-term for statistical validity)
+        window_type = config.get('data', {}).get('temporal_window', 'long_term')
+        window_days_map = {
+            'short_term': config['data']['temporal_windows']['short_term'],
+            'medium_term': config['data']['temporal_windows']['medium_term'],
+            'long_term': config['data']['temporal_windows']['long_term'],
+            'historical': None  # No limit - all available data
+        }
+        
         end = datetime.now()
-        start = end - timedelta(days=365)
+        days_to_fetch = window_days_map.get(window_type, config['data']['temporal_windows']['long_term'])
+        
+        if days_to_fetch is None:
+            # Historical mode: fetch maximum available data (e.g., 20+ years)
+            start = end - timedelta(days=7300)  # 20 years default for historical
+            logging.info(f"Using HISTORICAL window: 20+ years ({start.date()} to {end.date()})")
+        else:
+            start = end - timedelta(days=days_to_fetch)
+            logging.info(f"Using {window_type.upper()} window: {days_to_fetch} days ({start.date()} to {end.date()})")
 
         df = fetch_ingv_events(
             starttime=start.isoformat(),
@@ -47,9 +65,11 @@ def pipeline():
         logging.info("Step 2: Cleaning...")
         clean_df = build_catalog("data/raw/ingv_events.csv")
 
-        # 3. B-VALUE
+        # 3. B-VALUE with configurable window sizes
         logging.info("Step 3: B-Value Analysis...")
-        run_b_analysis()
+        window_events = config['b_value'].get('window_events_medium', 300)
+        m0 = config['b_value']['m0']
+        run_b_analysis(window_events=window_events, m0=m0, config=config)
 
         # 4. ANOMALY
         logging.info("Step 4: Anomaly Detection...")

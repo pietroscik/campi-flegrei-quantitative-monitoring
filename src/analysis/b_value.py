@@ -344,7 +344,9 @@ def run_b_analysis(
     input_path: str = "data/processed/catalog_clean.csv",
     output_dir: str = "data/processed",
     m0: float = 1.0,
-    window_events: int = 300
+    window_events: int = 300,
+    window_days: int = 90,
+    config: dict = None
 ) -> dict:
     """
     Complete b-value analysis pipeline with robust statistical parameters.
@@ -358,7 +360,11 @@ def run_b_analysis(
     m0 : float
         Magnitude completeness threshold (default 1.0 for Campi Flegrei)
     window_events : int
-        Number of events per rolling window (default 300)
+        Number of events per rolling window (default 300 for medium-term)
+    window_days : int
+        Time-based window size in days (default 90 for quarterly)
+    config : dict
+        Optional configuration dictionary for dynamic parameter override
         
     Returns
     -------
@@ -367,6 +373,12 @@ def run_b_analysis(
     """
     import os
     os.makedirs(output_dir, exist_ok=True)
+    
+    # Override with config if provided
+    if config:
+        m0 = config.get('b_value', {}).get('m0', m0)
+        window_events = config.get('b_value', {}).get('window_events_medium', window_events)
+        window_days = config.get('data', {}).get('temporal_windows', {}).get('short_term', window_days)
     
     df = pd.read_csv(input_path)
     df["time"] = pd.to_datetime(df["time"])
@@ -380,7 +392,7 @@ def run_b_analysis(
     print(f"  b-value: {global_results['b_value']:.4f} ± {global_results['standard_error']:.4f}")
     print(f"  95% CI: [{global_results['ci_lower']:.4f}, {global_results['ci_upper']:.4f}]")
 
-    # Rolling b-value (event-based windows)
+    # Rolling b-value (event-based windows) - using configured window size
     rolling_event = rolling_b_value(df, window_events=window_events, m0=m0)
     rolling_event_path = os.path.join(output_dir, "b_value_rolling_events.csv")
     rolling_event.to_csv(rolling_event_path, index=False)
@@ -393,13 +405,13 @@ def run_b_analysis(
         print(f"  Std b: {rolling_event['b_value'].std():.4f}")
         print(f"  Saved to: {rolling_event_path}")
 
-    # Rolling b-value (time-based windows)
-    rolling_time = rolling_b_value_time_based(df, window_days=90, m0=m0)
+    # Rolling b-value (time-based windows) - using configured time window
+    rolling_time = rolling_b_value_time_based(df, window_days=window_days, m0=m0)
     rolling_time_path = os.path.join(output_dir, "b_value_rolling_time.csv")
     rolling_time.to_csv(rolling_time_path, index=False)
     
     print(f"\n[ROLLING B-VALUE - TIME BASED]")
-    print(f"  Window size: 90 days")
+    print(f"  Window size: {window_days} days")
     print(f"  Number of windows: {len(rolling_time)}")
     if len(rolling_time) > 0:
         print(f"  Mean b: {rolling_time['b_value'].mean():.4f}")
