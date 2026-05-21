@@ -2,150 +2,256 @@
 
 ## Abstract
 
-This repository implements a quantitative seismic monitoring framework for the Campi Flegrei volcanic caldera (Southern Italy). The system integrates statistical seismology, stochastic point-process modeling, and multi-indicator anomaly detection to simulate a near-real-time volcanic unrest monitoring environment.
+This paper presents an integrated seismic monitoring system for the Campi Flegrei caldera, combining multiple analytical approaches: (1) Gutenberg-Richter b-value estimation with rolling window analysis, (2) anomaly detection via Z-score and quantile-based methods, (3) multi-signal fusion integrating seismic rate, b-value, and ground uplift data, (4) Early Warning System with dynamic thresholding and persistence checks, and (5) ETAS (Epidemic Type Aftershock Sequence) stochastic modeling for background seismicity and triggering parameter estimation. The system ingests real-time data from INGV catalogs and processes them through a reproducible pipeline.
 
-The framework combines the Gutenberg–Richter law (b-value analysis), the ETAS (Epidemic-Type Aftershock Sequence) model, and a composite unrest index derived from multi-signal fusion. The objective is not deterministic eruption forecasting, but probabilistic characterization of seismic dynamics and system-level unrest detection.
+**Keywords**: Campi Flegrei, b-value, anomaly detection, ETAS, early warning, seismic monitoring
 
 ---
 
 ## 1. Introduction
 
-Volcanic calderas such as Campi Flegrei exhibit complex seismic behavior driven by coupled mechanical, thermal, and fluid-dynamic processes. Traditional single-metric approaches are insufficient to capture the full dynamics of unrest evolution.
+Campi Flegrei is one of the most hazardous volcanic systems in Europe, characterized by bradyseismic uplift episodes and swarms of low-to-moderate magnitude earthquakes. Quantitative monitoring requires integration of multiple signals to detect precursory patterns and assess unrest levels.
 
-This system proposes an integrated computational pipeline that:
-- quantifies seismicity evolution
-- models triggering dynamics
-- detects statistical anomalies
-- produces interpretable alert states
+### 1.1 Objectives
 
----
+- Implement automated ingestion of INGV seismic catalogs
+- Estimate temporal evolution of Gutenberg-Richter b-value
+- Detect statistical anomalies in b-value time series
+- Build a composite unrest index from multiple signals
+- Develop an Early Warning System with robust alert criteria
+- Fit ETAS model parameters for stochastic seismicity forecasting
 
-## 2. Data
+### 1.2 Study Area
 
-The analysis is based on seismic event catalogs provided by INGV (Istituto Nazionale di Geofisica e Vulcanologia).
-
-Each event includes:
-- origin time
-- magnitude
-- geographic coordinates
-- depth (when available)
-
-A spatial bounding box is applied to isolate the Campi Flegrei caldera region.
+The analysis focuses on the Campi Flegrei caldera region bounded by:
+- Latitude: 40.75°N – 40.95°N
+- Longitude: 14.05°E – 14.25°E
+- Minimum magnitude: M ≥ 0.0
 
 ---
 
-## 3. Methodology
+## 2. Methods
 
-### 3.1 Gutenberg–Richter Law
+### 2.1 Data Ingestion
 
-Seismicity magnitude distribution is modeled using:
+Seismic data are retrieved from the INGV FDSN web service (`https://webservices.ingv.it/fdsnws/event/1/query`) in GeoJSON format. The ingestion module fetches events within specified temporal and spatial bounds, including:
+- Origin time
+- Magnitude (local or duration scale)
+- Hypocentral depth
+- Geographic coordinates
+- Event ID
 
-- log N(M) = a − bM
+### 2.2 Catalog Preprocessing
 
-The b-value is estimated using rolling windows to capture temporal variations in stress regimes.
+Raw catalogs undergo quality control:
+1. **Time cleaning**: Remove events with invalid timestamps
+2. **Magnitude filtering**: Exclude negative or missing magnitudes
+3. **Spatial selection**: Apply bounding box filter for Campi Flegrei
+4. **Duplicate removal**: Eliminate duplicate event IDs
+5. **Feature engineering**: Compute derived variables (year, month, energy proxy)
 
----
+### 2.3 Gutenberg-Richter b-value Estimation
 
-### 3.2 ETAS Model
+The frequency-magnitude distribution follows the Gutenberg-Richter law:
 
-The ETAS model represents seismicity as a self-exciting point process:
+$$\log_{10} N(M) = a - bM$$
 
-- background rate (μ)
-- triggered seismicity (K)
-- magnitude scaling (α)
-- temporal decay parameters (p, c)
+where $b$ is estimated using the maximum likelihood method (Aki, 1965):
 
-The conditional intensity λ(t) describes the instantaneous seismic hazard.
+$$b = \frac{\log_{10}(e)}{\bar{M} - M_0}$$
 
----
+where $\bar{M}$ is the mean magnitude and $M_0$ is the completeness magnitude.
 
-### 3.3 Multi-Signal Unrest Index
+**Rolling b-value**: Computed over sliding windows of N=100 events to capture temporal variations.
 
-A composite indicator is constructed by integrating:
+### 2.4 Anomaly Detection
 
-- b-value anomalies
-- ETAS intensity variations
-- seismic rate fluctuations
+Two complementary methods identify b-value anomalies:
 
-All signals are normalized and aggregated into a single unrest metric.
+1. **Z-score method**: 
+   $$Z(t) = \frac{b(t) - \mu_{window}}{\sigma_{window}}$$
+   Anomaly flagged when |Z| > 2 (rolling window = 50 samples)
 
----
+2. **Quantile-based method**: 
+   Anomalies defined as values below 5th percentile or above 95th percentile of the empirical distribution.
 
-### 3.4 Early Warning System
+**Combined anomaly score**: Sum of Z-score and quantile indicators (range: 0–2).
 
-The unrest index is mapped into discrete operational states:
+### 2.5 Multi-Signal Fusion
 
-- NORMAL
-- ELEVATED
-- CRITICAL
+Three independent signals are integrated into a composite unrest index:
 
-Thresholds are empirically defined and can be recalibrated.
+1. **Seismicity rate**: Daily event count from catalog
+2. **b-value**: Rolling estimate from Section 2.3
+3. **Ground uplift**: Vertical displacement from GNSS station RITE (or equivalent)
 
----
+Signals are normalized using z-score normalization:
+$$X_{norm} = \frac{X - \mu_X}{\sigma_X}$$
 
-## 4. System Architecture
+**Unrest Index**:
+$$UI(t) = 0.4 \cdot Rate_{norm}(t) + 0.3 \cdot [-b_{norm}(t)] + 0.3 \cdot Uplift_{norm}(t)$$
 
-The system is structured in modular layers:
+Note: Negative b-value coefficient reflects inverse relationship (low b-value → high stress).
 
-- **Core Layer**: seismic modeling and statistical computation
-- **Pipeline Layer**: orchestration of analysis workflow
-- **Service Layer**:
-  - FastAPI (data access layer)
-  - Streamlit (visual analytics dashboard)
-  - Worker (batch execution engine)
+### 2.6 Early Warning System
 
----
+Dynamic thresholds are computed from the empirical distribution of the unrest index:
+- **NORMAL**: UI ≤ 50th percentile
+- **ELEVATED**: 50th < UI ≤ 75th percentile
+- **HIGH**: 75th < UI ≤ 90th percentile
+- **CRITICAL**: UI > 90th percentile
 
-## 5. Outputs
+**Alert criterion**: CRITICAL state with persistence > 60% over 7-day window.
 
-The system generates:
+### 2.7 ETAS Stochastic Modeling
 
-- cleaned seismic catalog
-- rolling b-value time series
-- ETAS conditional intensity λ(t)
-- multi-signal unrest index
-- early warning classification timeline
+The ETAS model describes seismicity rate as sum of background and triggered events:
 
----
+$$\lambda(t) = \mu + \sum_{i: t_i < t} K \cdot \exp[\alpha(M_i - M_0)] \cdot (t - t_i + c)^{-p}$$
 
-## 6. Key Assumptions
+Parameters:
+- $\mu$: Background seismicity rate
+- $K$: Productivity coefficient
+- $\alpha$: Magnitude sensitivity of triggering
+- $c$: Time delay parameter (seconds to days)
+- $p$: Temporal decay exponent
 
-- completeness of seismic catalog above magnitude threshold
-- local stationarity within rolling windows
-- partial independence between signal components
-- absence of external geophysical covariates (e.g., deformation, gas emissions)
-
----
-
-## 7. Limitations
-
-- not a deterministic eruption forecasting system
-- sensitivity to parameter calibration (ETAS, window size)
-- no integration of geodetic or geochemical data
-- simplified spatial representation (2D projection)
-- batch-based updates rather than true real-time streaming
+Maximum Likelihood Estimation (MLE) optimizes the log-likelihood function:
+$$LL = \sum_{i=1}^{n} \log \lambda(t_i) - \int_{T_{start}}^{T_{end}} \lambda(t) dt$$
 
 ---
 
-## 8. Intended Use
+## 3. Results
 
-This system is intended for:
-- research in statistical volcanology
-- educational purposes in geophysical data science
-- prototyping of monitoring systems
+### 3.1 Pipeline Execution
 
-It is not intended for operational civil protection decision-making.
+The full pipeline processes ~1 year of INGV data through 7 sequential modules:
+
+```
+INGV Fetch → Catalog Cleaning → b-value Analysis → Anomaly Detection → 
+Multi-Signal Fusion → Early Warning → ETAS MLE
+```
+
+### 3.2 Key Outputs
+
+| Module | Output File | Description |
+|--------|-------------|-------------|
+| Ingestion | `data/raw/ingv_events.csv` | Raw INGV catalog |
+| Preprocessing | `data/processed/catalog_clean.csv` | Quality-controlled catalog |
+| b-value | `data/processed/b_value_rolling.csv` | Temporal b-value series |
+| Anomaly | `data/processed/b_value_anomalies.csv` | Anomaly scores |
+| Multi-signal | `data/processed/unrest_index.csv` | Composite unrest index |
+| Early Warning | `data/processed/early_warning_system.csv` | Alert states & flags |
+| ETAS | `data/processed/etas_params.csv` | Fitted ETAS parameters |
+
+### 3.3 Figure: Synthetic Results Summary
+
+See `results/summary_figure.png` for visualization of:
+- (A) Map of seismicity with b-value spatial distribution
+- (B) Temporal evolution of b-value with anomaly highlights
+- (C) Multi-signal unrest index with threshold bands
+- (D) ETAS model fit comparison (observed vs. modeled rate)
 
 ---
 
-## 9. Conclusion
+## 4. Reproducibility Statement
 
-This repository provides a unified computational framework for volcanic seismicity analysis, combining classical seismological theory with modern probabilistic modeling and system-level integration. It demonstrates how multi-signal statistical inference can be operationalized into a coherent monitoring architecture.
+### 4.1 Environment Setup
+
+All dependencies are specified in `requirements.txt` and `environment.yml`:
+
+```bash
+# Using pip
+pip install -r requirements.txt
+
+# Or using conda
+conda env create -f environment.yml
+conda activate campi_flegrei_monitoring
+```
+
+### 4.2 Data Availability
+
+- **Primary data source**: INGV FDSN web service (public access)
+- **GNSS uplift data**: Placeholder in `data/external/uplift.csv` (user must provide)
+- **Processed outputs**: Generated in `data/processed/` directory
+
+### 4.3 Pipeline Execution
+
+Full reproducibility achieved by running:
+
+```bash
+python run_pipeline.py
+```
+
+Expected runtime: ~5-10 minutes for 1 year of data (depends on network latency for INGV API).
+
+### 4.4 Version Control
+
+- Code version: Git repository with commit hash
+- Python version: 3.9+
+- Key package versions: pandas≥1.3, numpy≥1.20, scipy≥1.7, scikit-learn≥1.0
+
+### 4.5 Configuration
+
+Adjustable parameters in `config.yaml`:
+- Spatial bounds (latitude/longitude)
+- Temporal window (days)
+- Minimum magnitude threshold
+- Rolling window sizes
+- Anomaly detection thresholds
+- ETAS optimization bounds
 
 ---
 
-## 10. References (conceptual)
+## 5. Limitations
 
-- Gutenberg & Richter (frequency–magnitude relation)
-- Ogata (1988) ETAS model formulation
-- Classical statistical seismology literature
+1. **Data completeness**: INGV catalog completeness magnitude may vary over time
+2. **Uplift data dependency**: External GNSS data required for full multi-signal analysis
+3. **ETAS assumptions**: Model assumes stationary background rate (may not hold during unrest)
+4. **Threshold calibration**: Alert thresholds based on empirical percentiles, not physical models
+
+See `docs/limitations.md` for detailed discussion.
+
+---
+
+## 6. Conclusions
+
+This monitoring system provides a quantitative framework for assessing volcanic unrest at Campi Flegrei through integration of multiple seismic indicators. The modular architecture allows easy extension to additional signals (e.g., geochemical, geodetic, gravimetric) and operational deployment in near-real-time mode.
+
+Future developments:
+- Real-time streaming ingestion
+- Machine learning-based pattern recognition
+- Probabilistic eruption forecasting
+- Integration with civil protection decision support systems
+
+---
+
+## References
+
+- Aki, K. (1965). Maximum likelihood estimate of b in the formula log N = a - bM and its confidence limits. *Bulletin of the Earthquake Research Institute*, 43, 237-239.
+- Ogata, Y. (1988). Statistical models for earthquake occurrences and residual analysis for point processes. *Journal of the American Statistical Association*, 83(401), 9-27.
+- Marzocchi, W., & Bebbington, M. S. (2012). Probabilistic eruption forecasting at short and long time scales. *Bulletin of Volcanology*, 74(8), 1777-1805.
+
+---
+
+## License
+
+MIT License – see `LICENSE` file.
+
+## Citation
+
+If you use this code in your research, please cite:
+
+```bibtex
+@software{campi_flegrei_monitoring,
+  title = {Campi Flegrei Quantitative Monitoring System},
+  year = {2024},
+  url = {https://github.com/your-repo/campi-flegrei-monitoring}
+}
+```
+
+---
+
+## Contact
+
+For questions or collaboration: [your-email@example.com]
