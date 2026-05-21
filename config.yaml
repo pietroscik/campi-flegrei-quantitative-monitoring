@@ -1,18 +1,36 @@
+# Campi Flegrei Monitoring System - Configuration
+# Following statistical seismology best practices for volcanic monitoring
+
 data:
   bbox:
     min_lat: 40.75
     max_lat: 40.95
     min_lon: 14.05
     max_lon: 14.25
+  
+  # Temporal windows for statistically robust analysis
+  # Reference: Statistical seismology requires minimum 20 years for stable parameter estimation
+  temporal_windows:
+    short_term: 90        # 3 months - rapid changes detection
+    medium_term: 365      # 1 year - annual cycles
+    long_term: 7300       # 20 years - bradyseismic cycles (statistically valid)
+    historical: "all"     # Complete catalog - baseline statistics
+  
+  # Default window type for pipeline execution
+  temporal_window: long_term  # Options: short_term, medium_term, long_term, historical
 
 b_value:
-  window: 100
-  m0: 0.0
+  # Window sizes validated for statistical stability
+  window_events_short: 100    # Short-term variations (minimum 50 for MLE)
+  window_events_medium: 300   # Medium-term trends (recommended 300+)
+  window_events_long: 500     # Long-term baseline (optimal for b-value stability)
+  m0: 1.0                     # Magnitude completeness for Campi Flegrei
 
 anomaly:
-  z_threshold: 2
-  quantile_low: 0.05
-  quantile_high: 0.95
+  z_threshold: 2.5            # More conservative for long time series
+  quantile_low: 0.025         # 2.5th percentile (2-sigma equivalent)
+  quantile_high: 0.975        # 97.5th percentile
+  rolling_window_z: 100       # Rolling window for Z-score calculation
 
 etas:
   mu: 0.1
@@ -20,3 +38,10 @@ etas:
   alpha: 1.0
   c: 0.01
   p: 1.2
+  # Time window for ETAS fitting (days)
+  fitting_window: 3650        # 10 years minimum for stable ETAS parameters
+
+early_warning:
+  ui_window_days: 90          # 3-month window for unrest index
+  alert_persistence: 0.6      # 60% persistence threshold
+  critical_percentile: 0.90   # 90th percentile for CRITICAL state

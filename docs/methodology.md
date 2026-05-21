@@ -51,7 +51,16 @@ $$b = \frac{\log_{10}(e)}{\bar{M} - M_0}$$
 
 where $\bar{M}$ is the mean magnitude and $M_0$ is the completeness magnitude.
 
-**Temporal analysis:** Rolling window approach with N=100 events to capture stress regime variations.
+**Temporal analysis:** Multi-scale rolling window approach for comprehensive temporal characterization:
+
+| Window Type | Size | Purpose | Statistical Validity |
+|-------------|------|---------|---------------------|
+| Short-term | 90 days / 100 events | Rapid stress changes detection | Minimum for MLE stability |
+| Medium-term | 365 days / 300 events | Annual cycle analysis | Recommended for robustness |
+| Long-term | 20 years / 500+ events | Bradyseismic cycle baseline | Statistically valid (Ogata, 1988) |
+| Historical | Complete catalog | Reference b-value | Optimal statistical power |
+
+**Statistical rationale:** Long-term windows (20+ years) are essential for stable parameter estimation in volcanic environments where seismicity rates vary by orders of magnitude during bradyseismic crises.
 
 ---
 
@@ -127,9 +136,17 @@ Multi-Signal Fusion → Early Warning → ETAS MLE → Outputs
 ```
 
 **Execution modes:**
-- Full historical pipeline (default: 1 year of data)
+- Full historical pipeline (default: 20 years for statistical validity)
+- Medium-term analysis (1 year - annual cycles)
+- Short-term monitoring (90 days - rapid changes)
 - Worker cycle (periodic updates on recent data)
 - Real-time stream (continuous monitoring for dashboard)
+
+**Configuration:** Temporal windows are defined in `config.yaml` under `data.temporal_windows`:
+- `short_term`: 90 days
+- `medium_term`: 365 days  
+- `long_term`: 7300 days (20 years)
+- `historical`: "all" (complete catalog)
 
 ---
 
