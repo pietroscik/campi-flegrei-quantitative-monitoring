@@ -154,7 +154,7 @@ See `results/summary_figure.png` for visualization of:
 
 ---
 
-## 4. Reproducibility Statement
+## 4. Operational Deployment
 
 ### 4.1 Environment Setup
 
@@ -175,15 +175,55 @@ conda activate campi_flegrei_monitoring
 - **GNSS uplift data**: Placeholder in `data/external/uplift.csv` (user must provide)
 - **Processed outputs**: Generated in `data/processed/` directory
 
-### 4.3 Pipeline Execution
+### 4.3 Execution Modes
 
-Full reproducibility achieved by running:
+The system supports three operational modes:
+
+#### Mode A: Full Historical Pipeline
+
+Reprocess complete historical catalog (default: 1 year):
 
 ```bash
 python run_pipeline.py
 ```
 
 Expected runtime: ~5-10 minutes for 1 year of data (depends on network latency for INGV API).
+
+#### Mode B: Worker Cycle (Periodic Updates)
+
+Execute analysis cycle on recent data (default: last 7 days):
+
+```bash
+# Default: analyze last 7 days
+python services/worker/run_cycle.py
+
+# Custom window: analyze last 30 days
+python services/worker/run_cycle.py --days 30
+
+# With custom config
+python services/worker/run_cycle.py --days 7 --config config_custom.yaml
+```
+
+Suitable for cron job scheduling:
+```bash
+# Example: run every 6 hours
+0 */6 * * * cd /path/to/repo && python services/worker/run_cycle.py --days 7 >> logs/worker.log 2>&1
+```
+
+#### Mode C: Real-Time Stream Service
+
+Continuously monitor system state for dashboard integration:
+
+```bash
+# Console output (default: 10s interval)
+python services/stream/engine.py
+
+# JSON output for API integration
+python services/stream/engine.py --format json --interval 5
+
+# Custom update interval
+python services/stream/engine.py --interval 30 --format console
+```
 
 ### 4.4 Version Control
 
@@ -218,8 +258,10 @@ See `docs/limitations.md` for detailed discussion.
 
 This monitoring system provides a quantitative framework for assessing volcanic unrest at Campi Flegrei through integration of multiple seismic indicators. The modular architecture allows easy extension to additional signals (e.g., geochemical, geodetic, gravimetric) and operational deployment in near-real-time mode.
 
+**Important Statement**: The framework is not intended as a predictive system, but as a statistical monitoring tool for quantifying temporal changes in seismicity patterns. No deterministic forecasting claims are made.
+
 Future developments:
-- Real-time streaming ingestion
+- Real-time streaming ingestion with automated triggers
 - Machine learning-based pattern recognition
 - Probabilistic eruption forecasting
 - Integration with civil protection decision support systems
