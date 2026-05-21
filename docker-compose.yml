@@ -1,8 +1,47 @@
 version: "3.8"
 
 services:
+
   cf-monitoring:
     build: .
     container_name: cf_monitoring
     volumes:
       - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  api:
+    build: ./services/api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - cf-monitoring
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  dashboard:
+    build: ./services/dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    volumes:
+      - ./data:/app/data
+
+  worker:
+    build: ./services/worker
+    command: python run_cycle.py
+    depends_on:
+      - cf-monitoring
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  stream:
+    build: ./services/stream
+    command: python engine.py
+    depends_on:
+      - worker
+    volumes:
+      - ./data:/app/data
