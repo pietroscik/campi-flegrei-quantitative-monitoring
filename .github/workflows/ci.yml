@@ -19,5 +19,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Create data directories
+        run: mkdir -p data/processed
+
+      - name: Run pipeline
+        run: python run_pipeline.py
+
       - name: Run tests
         run: pytest tests/

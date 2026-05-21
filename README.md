@@ -1,4 +1,4 @@
-# Campi Flegrei Quantitative Monitoring System
+# 🌋 Campi Flegrei Quantitative Monitoring System
 
 ## Abstract
 
