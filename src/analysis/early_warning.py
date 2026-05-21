@@ -33,9 +33,9 @@ def classify_unrest(series, thresholds):
         series > thresholds["alert"]
     ]
 
-    labels = ["NORMAL", "ELEVATED", "HIGH", "CRITICAL"]
+    labels = np.array(["NORMAL", "ELEVATED", "HIGH", "CRITICAL"])
 
-    return np.select(conditions, labels)
+    return np.select(conditions, labels, default="NORMAL")
 
 
 # -----------------------------
@@ -79,5 +79,5 @@ def run_warning_system(input_path="data/processed/unrest_index.csv"):
     return df
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_warning_system()

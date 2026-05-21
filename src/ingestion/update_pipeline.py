@@ -1,4 +1,4 @@
-from fetch_ingv import fetch_ingv_events, save_raw
+from src.ingestion.fetch_ingv import fetch_ingv_events, save_raw
 from datetime import datetime, timedelta
 
 def run_update():
@@ -19,5 +19,5 @@ def run_update():
     save_raw(df, "data/raw/ingv_events_latest.csv")
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_update()

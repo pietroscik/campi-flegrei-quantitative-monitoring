@@ -38,8 +38,13 @@ def fetch_ingv_events(starttime, endtime, minmag=0.0, maxlat=None, minlat=None,
         props = f["properties"]
         geom = f["geometry"]
 
+        # handle time conversion properly
+        time_val = props.get("time")
+        if time_val is not None:
+            time_val = pd.to_datetime(time_val, unit="ms", errors="coerce")
+
         rows.append({
-            "time": props.get("time"),
+            "time": time_val,
             "magnitude": props.get("mag"),
             "depth": props.get("depth"),
             "longitude": geom["coordinates"][0],
@@ -52,7 +57,6 @@ def fetch_ingv_events(starttime, endtime, minmag=0.0, maxlat=None, minlat=None,
 
     # sorting e cleaning base
     if not df.empty:
-        df["time"] = pd.to_datetime(df["time"], unit="ms", errors="coerce")
         df = df.sort_values("time")
 
     return df
@@ -63,7 +67,7 @@ def save_raw(df, path="data/raw/ingv_events.csv"):
     print(f"[OK] Saved {len(df)} events -> {path}")
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
 
     end = datetime.utcnow()
     start = end - timedelta(days=365)  # ultimo anno (puoi cambiare)

@@ -124,5 +124,5 @@ def run_mle(input_path="data/processed/catalog_clean.csv"):
     return params
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     run_mle()
