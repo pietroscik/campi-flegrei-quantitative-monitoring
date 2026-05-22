@@ -1,4 +1,9 @@
 import os
+
+# Silenzia gli avvisi di TensorFlow (oneDNN, GPU, C++ logs)
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import logging
 import traceback
 import yaml

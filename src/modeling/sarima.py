@@ -93,10 +93,10 @@ def forecast_sarima(model, steps=30):
         return None, None
     
     forecast = model.get_forecast(steps=steps)
-    pred = forecast.predict_mean()
+    pred = forecast.predicted_mean
     conf_int = forecast.conf_int()
     
-    return pred.values, conf_int.values
+    return np.asarray(pred), np.asarray(conf_int)
 
 
 def run_sarima_analysis(input_path="data/processed/catalog_clean.csv", freq="D"):
@@ -122,7 +122,7 @@ def run_sarima_analysis(input_path="data/processed/catalog_clean.csv", freq="D")
     results = pd.DataFrame({
         "date": rate.index.tolist(),
         "observed": rate.values,
-        "fitted": model.fittedvalues.values
+        "fitted": np.asarray(model.fittedvalues)
     })
     
     # Add forecast

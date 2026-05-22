@@ -6,7 +6,7 @@ L'attività sismica nella caldera dei Campi Flegrei mostra attualmente un Indice
 
 ## 1. Sismicità e Previsioni a Breve Termine (AI)
 - **Trend Attuale**: I tassi di sismicità giornalieri rientrano nella baseline attesa.
-- **Previsione**: La rete neurale LSTM prevede per i prossimi 7 giorni un tasso sismico compreso tra **1.3 e 2.9 eventi/giorno**. Non si attendono sciami di forte intensità a brevissimo termine.
+- **Previsione**: La rete neurale LSTM prevede per i prossimi 7 giorni un tasso sismico compreso tra **0.0 e 1.8 eventi/giorno**. Non si attendono sciami di forte intensità a brevissimo termine.
 
 ## 2. Early Warning System Multi-Segnale
 - **Ultimo Allarme Registrato**: 2025-11-22.

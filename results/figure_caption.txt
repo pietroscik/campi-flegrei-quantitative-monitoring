@@ -1,25 +1,16 @@
 
-Figure 1: Summary of Campi Flegrei Monitoring System Results
+Figure 2: Advanced Modeling Results for Campi Flegrei
 
-(A) Seismicity Distribution: Spatial distribution of earthquakes (M ≥ 0.5) within the 
-    Campi Flegrei caldera region. Circle sizes are proportional to magnitude. 
-    The dashed blue circle indicates the approximate caldera boundary.
-
-(B) Temporal b-value Evolution: Rolling b-value estimates (window = 100 events) over 
-    the analysis period. Gray dashed line shows the mean b-value. Orange dotted lines 
-    indicate ±2 standard deviations. Red dots highlight statistically significant 
-    anomalies detected by Z-score and quantile methods.
-
-(C) Multi-Signal Unrest Index: Composite index integrating seismicity rate, b-value, 
-    and ground uplift. Green region: NORMAL state (≤50th percentile). Yellow region: 
-    ELEVATED state (50th-75th percentile). Orange region: HIGH state (75th-90th 
-    percentile). Red region: CRITICAL state (>90th percentile). Alert flags are 
-    triggered when CRITICAL state persists >60% over 7-day window.
-
-(D) ETAS Model Fit: Comparison of observed daily seismicity rate (blue bars) with 
-    ETAS model predictions (red line). Green dashed line shows the background 
-    seismicity rate (μ parameter). The ETAS model captures both background activity 
-    and triggered sequences following larger events.
-
-Parameters shown are from synthetic data for demonstration purposes. 
-Run the full pipeline with real INGV data for actual monitoring results.
+(A) SARIMA Forecasting: Observed daily seismic rate modeled with a Seasonal ARIMA process. 
+    The magenta line represents the short-term forecast with 95% confidence intervals.
+    
+(B) Benioff Strain & Changepoints: Rolling Benioff strain release rate over time. 
+    Vertical orange dashed lines indicate structural changepoints detected using 
+    CUSUM and variance-penalty algorithms.
+    
+(C) Coulomb Stress Drop (CSD): Estimated stress drop per event (gray dots) and rolling 
+    average (dark blue). Variations indicate changes in fault rupture mechanics.
+    
+(D) Critical Seismicity Index (CSI): Normalized metric combining moment release, event rate, 
+    and magnitude variance. Red markers indicate periods exceeding the critical threshold (0.8), 
+    often associated with approaching tipping points.

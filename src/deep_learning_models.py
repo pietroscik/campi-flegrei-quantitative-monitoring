@@ -10,13 +10,22 @@ Author: Campi Flegrei Monitoring Team
 Date: 2024
 """
 
+import os
+import warnings
+
+# Silenzia i warning hardware e di logica deprecata (es. tf.placeholder)
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
+
 import numpy as np
 import pandas as pd
 from typing import Tuple, Dict, List, Optional
-import warnings
 
 try:
     import tensorflow as tf
+    tf.get_logger().setLevel('ERROR')
     from tensorflow import keras
     from tensorflow.keras.models import Model, Sequential
     from tensorflow.keras.layers import (

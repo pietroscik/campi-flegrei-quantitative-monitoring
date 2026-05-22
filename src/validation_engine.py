@@ -15,12 +15,19 @@ Author: Campi Flegrei Monitoring Team
 Date: 2024
 """
 
+import os
+import warnings
+
+# Silenzia eventuali stampe e avvisi ritardati di TensorFlow
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
+
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional, Callable
 from datetime import datetime
-import warnings
-
 try:
     from sklearn.metrics import mean_squared_error, mean_absolute_error, f1_score
     from scipy.stats import zscore
