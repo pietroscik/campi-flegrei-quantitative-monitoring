@@ -11,6 +11,7 @@ Date: 2024
 """
 
 import numpy as np
+import pandas as pd
 from typing import Tuple, Dict, List, Optional
 import warnings
 
@@ -220,6 +221,18 @@ def build_autoencoder(
     z_mean = Dense(latent_dim)(x)
     z_log_var = Dense(latent_dim)(x)
     
+    # Add KL divergence loss using a custom layer (Keras 3 compatibility)
+    class KLDivergenceLayer(tf.keras.layers.Layer):
+        def call(self, inputs):
+            z_m, z_l_v = inputs
+            kl_loss = -0.5 * tf.reduce_mean(
+                tf.reduce_sum(1 + z_l_v - tf.square(z_m) - tf.exp(z_l_v), axis=1)
+            )
+            self.add_loss(0.1 * kl_loss)
+            return z_m
+            
+    KLDivergenceLayer()([z_mean, z_log_var])
+    
     # Sampling layer
     def sampling(args):
         z_mean, z_log_var = args
@@ -239,19 +252,9 @@ def build_autoencoder(
     autoencoder = Model(inputs=inputs, outputs=outputs)
     encoder = Model(inputs=inputs, outputs=z_mean)
     
-    # Custom loss: reconstruction + KL divergence
-    def vae_loss(x_true, x_pred):
-        reconstruction_loss = tf.reduce_mean(
-            tf.reduce_sum(tf.square(x_true - x_pred), axis=1)
-        )
-        kl_loss = -0.5 * tf.reduce_mean(
-            tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
-        )
-        return reconstruction_loss + 0.1 * kl_loss
-    
     autoencoder.compile(
         optimizer=Adam(learning_rate=learning_rate),
-        loss=vae_loss
+        loss='mse' # Reconstruction loss
     )
     
     return autoencoder, encoder
@@ -698,6 +701,108 @@ def prepare_seismic_features(
     return np.array(features), np.array(timestamps)
 
 
+def run_dl_pipeline(
+    catalog_path: str = "data/processed/catalog_clean.csv",
+    output_dir: str = "data/processed"
+) -> Optional[pd.DataFrame]:
+    """
+    Esegue la pipeline di Deep Learning per il forecasting della sismicità 
+    e il rilevamento delle anomalie.
+    """
+    import os
+    from datetime import timedelta
+    
+    os.makedirs(output_dir, exist_ok=True)
+    
+    if not os.path.exists(catalog_path):
+        print(f"ERROR: Catalog not found at {catalog_path}")
+        return None
+        
+    df = pd.read_csv(catalog_path, parse_dates=['time'])
+    df_clean = df.dropna(subset=['time', 'magnitude']).copy()
+    df_clean = df_clean.set_index('time').sort_index()
+    
+    # Aggregazione del tasso sismico giornaliero
+    daily_rate = df_clean.resample('D').size()
+    if len(daily_rate) == 0:
+        return None
+        
+    full_date_range = pd.date_range(start=daily_rate.index.min(), end=daily_rate.index.max(), freq='D')
+    daily_rate = daily_rate.reindex(full_date_range, fill_value=0)
+    
+    seismic_data = daily_rate.values.astype(float)
+    if len(seismic_data) < 100:
+        print("Not enough data for Deep Learning (requires >= 100 days). Skipping DL step.")
+        return None
+        
+    # Normalizzazione per la stabilità della rete neurale
+    mean_val = seismic_data.mean()
+    std_val = seismic_data.std()
+    normalized_data = (seismic_data - mean_val) / (std_val + 1e-8)
+    
+    # 1. LSTM Forecasting (Previsione dei prossimi 7 giorni)
+    lookback = 30
+    horizon = 7
+    print(f"  Training LSTM forecaster on {len(seismic_data)} days of historical data...")
+    
+    # Creazione delle sequenze di addestramento su tutto il dataset
+    X_train, y_train = [], []
+    for i in range(len(normalized_data) - lookback - horizon + 1):
+        X_train.append(normalized_data[i:i+lookback].reshape(-1, 1))
+        y_train.append(normalized_data[i+lookback:i+lookback+horizon])
+        
+    if len(X_train) > 0:
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+        
+        forecaster = LSTMForecaster(lookback=lookback, horizon=horizon, lstm_units=[64, 32])
+        forecaster.fit(X_train, y_train, epochs=30, batch_size=16, verbose=0)
+        
+        # Previsione del futuro
+        last_sequence = normalized_data[-lookback:].reshape(1, lookback, 1)
+        forecast_norm = forecaster.predict(last_sequence)[0]
+        forecast_real = forecast_norm * std_val + mean_val
+        forecast_real = np.maximum(0, forecast_real)  # Previene i tassi sismici negativi
+        
+        future_dates = [daily_rate.index[-1] + timedelta(days=i) for i in range(1, horizon + 1)]
+        forecast_df = pd.DataFrame({'time': future_dates, 'forecasted_rate': forecast_real})
+        forecast_path = os.path.join(output_dir, "dl_forecast.csv")
+        forecast_df.to_csv(forecast_path, index=False)
+        print(f"  [OK] 7-Day LSTM Forecast saved -> {forecast_path}")
+        
+    # 2. VAE Anomaly Detection (Unsupervised Autoencoder)
+    print("  Training Autoencoder Anomaly Detector...")
+    features = []
+    window = 7
+    for i in range(len(seismic_data) - window + 1):
+        w_data = seismic_data[i:i+window]
+        features.append([np.mean(w_data), np.std(w_data), np.max(w_data),
+                         np.min(w_data), np.median(w_data), w_data[-1] - w_data[0],
+                         len(w_data[w_data > np.mean(w_data)])])
+    features = np.array(features)
+    
+    if len(features) > 0:
+        detector = AnomalyDetector(latent_dim=4, threshold_percentile=95)
+        detector.fit(features, epochs=30, batch_size=16, verbose=0)
+        flags, errors, z_scores = detector.detect(features)
+        
+        # Allineamento della lunghezza per combaciare con l'indice temporale
+        pad_len = len(daily_rate) - len(flags)
+        pad_flags = np.pad(flags, (pad_len, 0), constant_values=False)
+        pad_scores = np.pad(z_scores, (pad_len, 0), constant_values=0.0)
+        
+        anomaly_df = pd.DataFrame({
+            'time': daily_rate.index,
+            'dl_anomaly_score': pad_scores,
+            'dl_is_anomaly': pad_flags.astype(int)
+        })
+        anomaly_path = os.path.join(output_dir, "dl_anomalies.csv")
+        anomaly_df.to_csv(anomaly_path, index=False)
+        print(f"  [OK] DL Anomalies saved -> {anomaly_path}")
+        
+    return forecast_df
+
+
 if __name__ == "__main__":
     """
     Test Deep Learning Models on REAL INGV seismic data.
@@ -707,7 +812,6 @@ if __name__ == "__main__":
     
     NO SYNTHETIC DATA IS USED. All results are reproducible with real observations.
     """
-    import pandas as pd
     import os
     
     print("=" * 70)

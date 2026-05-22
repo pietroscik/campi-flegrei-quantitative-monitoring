@@ -2,6 +2,9 @@ import os
 import logging
 import traceback
 import yaml
+import pandas as pd
+import sys
+import subprocess
 from src.ingestion.fetch_ingv import fetch_ingv_events, save_raw
 from src.preprocessing.clean_catalog import build_catalog
 from src.analysis.b_value import run_b_analysis
@@ -9,6 +12,19 @@ from src.analysis.anomaly_bvalue import run_anomaly
 from src.analysis.multi_signal_model import run_multisignal
 from src.analysis.early_warning import run_warning_system
 from src.analysis.etas_mle import run_mle
+from src.analysis.etas_model import run_etas
+from src.deep_learning_models import run_dl_pipeline
+
+try:
+    from src.modeling.benioff import run_benioff_analysis
+    from src.modeling.changepoint import run_changepoint_analysis
+    from src.modeling.csd import run_csd_analysis
+    from src.modeling.csi import run_csi_analysis
+    from src.modeling.sarima import run_sarima_analysis
+    MODELING_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Modeling modules not fully available: {e}")
+    MODELING_AVAILABLE = False
 
 from datetime import datetime, timedelta
 
@@ -49,15 +65,31 @@ def pipeline():
             start = end - timedelta(days=days_to_fetch)
             logging.info(f"Using {window_type.upper()} window: {days_to_fetch} days ({start.date()} to {end.date()})")
 
-        df = fetch_ingv_events(
-            starttime=start.isoformat(),
-            endtime=end.isoformat(),
-            minmag=config['b_value']['m0'],
-            maxlat=config['data']['bbox']['max_lat'],
-            minlat=config['data']['bbox']['min_lat'],
-            maxlon=config['data']['bbox']['max_lon'],
-            minlon=config['data']['bbox']['min_lon']
-        )
+        # Chunking requests to avoid INGV API limits
+        chunk_size_days = 365
+        current_start = start
+        dfs = []
+        
+        while current_start < end:
+            current_end = min(current_start + timedelta(days=chunk_size_days), end)
+            logging.info(f"Fetching API chunk: {current_start.date()} to {current_end.date()}")
+            chunk_df = fetch_ingv_events(
+                starttime=current_start.isoformat(),
+                endtime=current_end.isoformat(),
+                minmag=config['b_value']['m0'],
+                maxlat=config['data']['bbox']['max_lat'],
+                minlat=config['data']['bbox']['min_lat'],
+                maxlon=config['data']['bbox']['max_lon'],
+                minlon=config['data']['bbox']['min_lon']
+            )
+            if chunk_df is not None and not chunk_df.empty:
+                dfs.append(chunk_df)
+            current_start = current_end
+            
+        if not dfs:
+            raise ValueError("No data retrieved from INGV API.")
+            
+        df = pd.concat(dfs, ignore_index=True)
 
         save_raw(df)
 
@@ -79,13 +111,40 @@ def pipeline():
         logging.info("Step 5: Multi-Signal Model...")
         run_multisignal()
 
-        # 6. EARLY WARNING
-        logging.info("Step 6: Early Warning System...")
+        # 6. ETAS MLE
+        logging.info("Step 6: ETAS MLE & Intensity Modeling...")
+        run_mle()
+        run_etas()
+
+        # 7. DEEP LEARNING
+        logging.info("Step 7: Deep Learning Forecasting & Anomalies...")
+        run_dl_pipeline()
+
+        # 8. EARLY WARNING
+        logging.info("Step 8: Early Warning System (Hybrid)...")
         run_warning_system()
 
-        # 7. ETAS MLE
-        logging.info("Step 7: ETAS MLE...")
-        run_mle()
+        # 9. ADVANCED MODELING
+        if MODELING_AVAILABLE:
+            logging.info("Step 9: Advanced Modeling (CSD, CSI, Benioff, SARIMA, Changepoint)...")
+            run_benioff_analysis()
+            run_changepoint_analysis()
+            run_csd_analysis()
+            run_csi_analysis()
+            run_sarima_analysis()
+        else:
+            logging.warning("Skipping Advanced Modeling due to missing dependencies.")
+
+        # 10. VALIDATION
+        logging.info("Step 10: Running Validation Engine...")
+        # Eseguito come modulo per permettere l'importazione da src.deep_learning_models
+        subprocess.run([sys.executable, "-m", "src.validation_engine"])
+
+        # 11. FIGURES & REPORT
+        logging.info("Step 11: Generating Figures and Reports...")
+        subprocess.run([sys.executable, "scripts/generate_paper_figures.py"])
+        subprocess.run([sys.executable, "scripts/generate_summary_figure.py"])
+        subprocess.run([sys.executable, "scripts/generate_report.py"])
 
         logging.info("[PIPELINE COMPLETE]")
     except Exception as e:

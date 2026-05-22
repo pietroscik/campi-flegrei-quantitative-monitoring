@@ -45,22 +45,33 @@ def fetch_from_ingv_api(days_back: int = 365, min_magnitude: float = 0.0) -> Opt
     """
     try:
         from ingestion.fetch_ingv import fetch_ingv_events
-        print("Attempting to fetch data from INGV FDSN webservice...")
+        print(f"Attempting to fetch data from INGV FDSN webservice for the last {days_back} days...")
         
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(days=days_back)
         
-        df = fetch_ingv_events(
-            starttime=start_time,
-            endtime=end_time,
-            minmag=min_magnitude,
-            maxlat=CF_BOUNDS["max_lat"] + 0.1,  # Slightly larger box for API
-            minlat=CF_BOUNDS["min_lat"] - 0.1,
-            maxlon=CF_BOUNDS["max_lon"] + 0.1,
-            minlon=CF_BOUNDS["min_lon"] - 0.1
-        )
+        chunk_days = 365
+        current_start = start_time
+        dfs = []
         
-        if df is not None and len(df) > 0:
+        while current_start < end_time:
+            current_end = min(current_start + timedelta(days=chunk_days), end_time)
+            print(f"  Fetching chunk: {current_start.date()} to {current_end.date()}...")
+            chunk_df = fetch_ingv_events(
+                starttime=current_start,
+                endtime=current_end,
+                minmag=min_magnitude,
+                maxlat=CF_BOUNDS["max_lat"] + 0.1,
+                minlat=CF_BOUNDS["min_lat"] - 0.1,
+                maxlon=CF_BOUNDS["max_lon"] + 0.1,
+                minlon=CF_BOUNDS["min_lon"] - 0.1
+            )
+            if chunk_df is not None and not chunk_df.empty:
+                dfs.append(chunk_df)
+            current_start = current_end
+            
+        if dfs:
+            df = pd.concat(dfs, ignore_index=True)
             print(f"Successfully fetched {len(df)} events from INGV API.")
             # Standardize column names
             df.columns = df.columns.str.lower().str.strip()

@@ -32,6 +32,7 @@ htmlcov/
 *.swp
 *.swo
 *.tmp
+*.temp
 
 # OS
 .DS_Store

@@ -36,6 +36,19 @@ unrest_df = pd.read_csv("data/processed/unrest_index.csv")
 anomalies_df = pd.read_csv("data/processed/b_value_anomalies.csv")
 ew_df = pd.read_csv("data/processed/early_warning_system.csv")
 
+# Try to load ETAS params
+etas_params = None
+if os.path.exists("data/processed/etas_params.csv"):
+    etas_params = pd.read_csv("data/processed/etas_params.csv").iloc[0].to_dict()
+    print("Loaded optimized ETAS parameters.")
+
+# Try to load DL forecast
+dl_forecast_df = None
+if os.path.exists("data/processed/dl_forecast.csv"):
+    dl_forecast_df = pd.read_csv("data/processed/dl_forecast.csv")
+    dl_forecast_df['time'] = pd.to_datetime(dl_forecast_df['time'])
+    print("Loaded Deep Learning (LSTM) forecast.")
+
 # Convert timestamps
 catalog['time'] = pd.to_datetime(catalog['time'])
 b_value_df['time'] = pd.to_datetime(b_value_df['time'])
@@ -62,6 +75,10 @@ ax1.fill_between(daily_rate.index, daily_rate.values, alpha=0.3, color='steelblu
 ax1.plot(daily_rate.index, daily_rate.rolling(window=7, min_periods=1).mean(), 
          color='darkblue', linewidth=2, label='7-day moving average')
 
+if dl_forecast_df is not None and not dl_forecast_df.empty:
+    ax1.plot(dl_forecast_df['time'], dl_forecast_df['forecasted_rate'], 
+             color='magenta', linewidth=2.5, linestyle='--', label='LSTM 7-day forecast')
+
 ax1.set_xlabel('Date')
 ax1.set_ylabel('Events per day')
 ax1.set_title('Campi Flegrei - Seismicity Rate Evolution')
@@ -69,6 +86,17 @@ ax1.legend(loc='upper right')
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
 plt.xticks(rotation=45)
+
+if etas_params is not None:
+    param_text = "ETAS MLE Parameters:\n"
+    param_text += f"$\\mu$ = {etas_params.get('mu', 0):.4f}\n"
+    param_text += f"$K$ = {etas_params.get('K', 0):.4f}\n"
+    param_text += f"$\\alpha$ = {etas_params.get('alpha', 0):.4f}\n"
+    param_text += f"$c$ = {etas_params.get('c', 0):.4f}\n"
+    param_text += f"$p$ = {etas_params.get('p', 0):.4f}"
+    ax1.text(0.02, 0.95, param_text, transform=ax1.transAxes, fontsize=10,
+             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='gray'))
+
 plt.tight_layout()
 plt.savefig('figures/01_seismicity_rate.png', dpi=300, bbox_inches='tight')
 plt.close()
@@ -198,38 +226,27 @@ print("Generating Figure 5: Multi-Signal Unrest Index...")
 fig5, ax5 = plt.subplots(figsize=(12, 6))
 
 # Plot unrest index
-ax5.plot(unrest_df['time'], unrest_df['unrest_index'], 
-         color='darkred', linewidth=2, label='Unrest Index')
+ax5.plot(ew_df['time'], ew_df['unrest_index'], 
+         color='navy', linewidth=2, label='Unrest Index', zorder=4)
 
-# Add threshold lines
-thresholds = {
-    'NORMAL': unrest_df['unrest_index'].quantile(0.50),
-    'ELEVATED': unrest_df['unrest_index'].quantile(0.75),
-    'HIGH': unrest_df['unrest_index'].quantile(0.90),
-    'CRITICAL': unrest_df['unrest_index'].quantile(0.95)
-}
-
-colors_threshold = {'NORMAL': 'green', 'ELEVATED': 'orange', 'HIGH': 'red', 'CRITICAL': 'darkred'}
-linestyles = {'NORMAL': '--', 'ELEVATED': '-.', 'HIGH': '-', 'CRITICAL': '-'}
-
-for state, value in thresholds.items():
-    ax5.axhline(value, color=colors_threshold[state], linestyle=linestyles[state], 
-                linewidth=1.5, alpha=0.8, label=f'{state} threshold ({value:.2f})')
-
-# Color background by alert state
-if 'state' in ew_df.columns:
-    for idx, row in ew_df.iterrows():
-        if pd.notna(row['unrest_index']):
-            color_map = {'NORMAL': 'lightgreen', 'ELEVATED': 'lightyellow', 
-                        'HIGH': 'lightsalmon', 'CRITICAL': 'lightcoral'}
-            ax5.axvspan(row['time'], row['time'] + pd.Timedelta(days=1), 
-                       color=color_map.get(row['state'], 'white'), 
-                       alpha=0.2, linewidth=0)
+if 'threshold_baseline' in ew_df.columns:
+    # Plot dynamic threshold lines
+    ax5.plot(ew_df['time'], ew_df['threshold_baseline'], color='green', linestyle='--', linewidth=1.5, alpha=0.8, label='Baseline Threshold')
+    ax5.plot(ew_df['time'], ew_df['threshold_attention'], color='orange', linestyle='-.', linewidth=1.5, alpha=0.8, label='Attention Threshold')
+    ax5.plot(ew_df['time'], ew_df['threshold_alert'], color='red', linestyle='-', linewidth=1.5, alpha=0.8, label='Alert Threshold')
+    
+    # Fill dynamic confidence bands
+    y_min, y_max = ew_df['unrest_index'].min() - 0.5, ew_df['unrest_index'].max() + 0.5
+    ax5.fill_between(ew_df['time'], y_min, ew_df['threshold_baseline'], color='lightgreen', alpha=0.2, label='State: NORMAL')
+    ax5.fill_between(ew_df['time'], ew_df['threshold_baseline'], ew_df['threshold_attention'], color='gold', alpha=0.2, label='State: ELEVATED')
+    ax5.fill_between(ew_df['time'], ew_df['threshold_attention'], ew_df['threshold_alert'], color='lightsalmon', alpha=0.2, label='State: HIGH')
+    ax5.fill_between(ew_df['time'], ew_df['threshold_alert'], y_max, color='lightcoral', alpha=0.3, label='State: CRITICAL')
+    ax5.set_ylim([y_min, y_max])
 
 ax5.set_xlabel('Date')
 ax5.set_ylabel('Normalized Unrest Index')
 ax5.set_title('Campi Flegrei - Composite Unrest Index with Alert Thresholds')
-ax5.legend(loc='upper right', fontsize=9)
+ax5.legend(loc='upper left', fontsize=9)
 ax5.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax5.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
 plt.xticks(rotation=45)
@@ -246,13 +263,29 @@ print("Generating Figure 6: Summary Dashboard...")
 fig6, axes6 = plt.subplots(3, 2, figsize=(16, 14))
 
 # Panel A: Map-like overview (seismicity rate)
-axes6[0, 0].fill_between(daily_rate.index, daily_rate.values, alpha=0.4, color='steelblue')
+axes6[0, 0].fill_between(daily_rate.index, daily_rate.values, alpha=0.4, color='steelblue', label='Daily count')
 axes6[0, 0].plot(daily_rate.index, daily_rate.rolling(7, min_periods=1).mean(), 
-                 color='darkblue', linewidth=2)
+                 color='darkblue', linewidth=2, label='7-day MA')
+
+if dl_forecast_df is not None and not dl_forecast_df.empty:
+    axes6[0, 0].plot(dl_forecast_df['time'], dl_forecast_df['forecasted_rate'], 
+                     color='magenta', linewidth=2, linestyle='--', label='LSTM Forecast')
+    axes6[0, 0].legend(loc='upper right', fontsize=8)
+
 axes6[0, 0].set_ylabel('Events/day')
 axes6[0, 0].set_title('(A) Seismicity Rate')
 axes6[0, 0].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 axes6[0, 0].tick_params(axis='x', rotation=45)
+
+if etas_params is not None:
+    param_text = "ETAS MLE Parameters:\n"
+    param_text += f"$\\mu$ = {etas_params.get('mu', 0):.4f}\n"
+    param_text += f"$K$ = {etas_params.get('K', 0):.4f}\n"
+    param_text += f"$\\alpha$ = {etas_params.get('alpha', 0):.4f}\n"
+    param_text += f"$c$ = {etas_params.get('c', 0):.4f}\n"
+    param_text += f"$p$ = {etas_params.get('p', 0):.4f}"
+    axes6[0, 0].text(0.02, 0.95, param_text, transform=axes6[0, 0].transAxes, fontsize=9,
+                     verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='gray'))
 
 # Panel B: Gutenberg-Richter
 axes6[0, 1].scatter(bin_centers, log_counts, s=30, alpha=0.7, color='navy')
@@ -282,24 +315,54 @@ if 'anomaly_score' in anomalies_df.columns:
     axes6[1, 1].tick_params(axis='x', rotation=45)
 
 # Panel E: Unrest index
-axes6[2, 0].plot(unrest_df['time'], unrest_df['unrest_index'], color='darkred', linewidth=2)
-for state, value in thresholds.items():
-    axes6[2, 0].axhline(value, color=colors_threshold[state], linestyle='--', 
-                        linewidth=1, alpha=0.7, label=state)
+axes6[2, 0].plot(ew_df['time'], ew_df['unrest_index'], color='navy', linewidth=2, zorder=4)
+if 'threshold_baseline' in ew_df.columns:
+    axes6[2, 0].plot(ew_df['time'], ew_df['threshold_baseline'], color='green', linestyle='--', linewidth=1, alpha=0.8, label='Baseline')
+    axes6[2, 0].plot(ew_df['time'], ew_df['threshold_attention'], color='orange', linestyle='-.', linewidth=1, alpha=0.8, label='Attention')
+    axes6[2, 0].plot(ew_df['time'], ew_df['threshold_alert'], color='red', linestyle='-', linewidth=1, alpha=0.8, label='Alert')
+    
+    y_min, y_max = ew_df['unrest_index'].min() - 0.5, ew_df['unrest_index'].max() + 0.5
+    axes6[2, 0].fill_between(ew_df['time'], y_min, ew_df['threshold_baseline'], color='lightgreen', alpha=0.2)
+    axes6[2, 0].fill_between(ew_df['time'], ew_df['threshold_baseline'], ew_df['threshold_attention'], color='gold', alpha=0.2)
+    axes6[2, 0].fill_between(ew_df['time'], ew_df['threshold_attention'], ew_df['threshold_alert'], color='lightsalmon', alpha=0.2)
+    axes6[2, 0].fill_between(ew_df['time'], ew_df['threshold_alert'], y_max, color='lightcoral', alpha=0.3)
+    axes6[2, 0].set_ylim([y_min, y_max])
+
 axes6[2, 0].set_ylabel('Unrest Index')
 axes6[2, 0].set_title('(E) Composite Unrest Index')
 axes6[2, 0].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 axes6[2, 0].tick_params(axis='x', rotation=45)
-axes6[2, 0].legend(fontsize=8, loc='upper right')
+axes6[2, 0].legend(fontsize=8, loc='upper left')
 
 # Panel F: Alert states
 if 'state' in ew_df.columns and 'alert_flag' in ew_df.columns:
-    alert_dates = ew_df[ew_df['alert_flag'] == 1]['time']
     axes6[2, 1].plot(ew_df['time'], ew_df['unrest_index'], color='gray', alpha=0.5)
-    if len(alert_dates) > 0:
+    
+    has_alerts = False
+    
+    # Plot Statistical Alerts
+    if 'stat_alert_flag' in ew_df.columns:
+        stat_dates = ew_df[ew_df['stat_alert_flag'] == 1]['time']
+        if len(stat_dates) > 0:
+            axes6[2, 1].scatter(stat_dates, ew_df.loc[ew_df['stat_alert_flag'] == 1, 'unrest_index'],
+                               c='red', s=150, marker='^', label='Statistical Alert', zorder=5)
+            has_alerts = True
+            
+    # Plot Deep Learning Alerts
+    if 'dl_alert_flag' in ew_df.columns:
+        dl_dates = ew_df[ew_df['dl_alert_flag'] == 1]['time']
+        if len(dl_dates) > 0:
+            axes6[2, 1].scatter(dl_dates, ew_df.loc[ew_df['dl_alert_flag'] == 1, 'unrest_index'],
+                               c='blue', s=80, marker='o', label='Deep Learning Alert', zorder=6)
+            has_alerts = True
+            
+    if not has_alerts and len(ew_df[ew_df['alert_flag'] == 1]) > 0:
+        alert_dates = ew_df[ew_df['alert_flag'] == 1]['time']
         axes6[2, 1].scatter(alert_dates, ew_df.loc[ew_df['alert_flag'] == 1, 'unrest_index'],
                            c='red', s=150, marker='^', label='ALERT', zorder=5)
-    else:
+        has_alerts = True
+        
+    if not has_alerts:
         # No alerts - show annotation
         axes6[2, 1].text(0.5, 0.5, 'No alerts triggered', 
                         transform=axes6[2, 1].transAxes, ha='center', va='center',
@@ -308,7 +371,8 @@ if 'state' in ew_df.columns and 'alert_flag' in ew_df.columns:
     axes6[2, 1].set_title('(F) Early Warning Alerts')
     axes6[2, 1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     axes6[2, 1].tick_params(axis='x', rotation=45)
-    axes6[2, 1].legend()
+    if has_alerts:
+        axes6[2, 1].legend(loc='upper right', fontsize=9)
 
 plt.suptitle('Campi Flegrei Quantitative Monitoring System - Summary Dashboard', fontsize=16, fontweight='bold')
 plt.tight_layout(rect=[0, 0, 1, 0.97])

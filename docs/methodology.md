@@ -161,6 +161,9 @@ Multi-Signal Fusion → Early Warning → ETAS MLE → Outputs
 | Multi-signal | `data/processed/unrest_index.csv` | Composite unrest index |
 | Early Warning | `data/processed/early_warning_system.csv` | Alert states & flags |
 | ETAS | `data/processed/etas_params.csv` | Fitted ETAS parameters |
+| Deep Learning | `data/processed/dl_forecast.csv` | LSTM 7-day rate forecast |
+| Deep Learning | `data/processed/dl_anomalies.csv` | VAE anomaly scores |
+| Adv. Modeling | `data/processed/*_output.csv` | SARIMA, Benioff, CSD, CSI, Changepoint |
 
 **Figures:**
 - `figures/01_seismicity_rate.png` - Seismicity rate evolution
@@ -170,6 +173,7 @@ Multi-Signal Fusion → Early Warning → ETAS MLE → Outputs
 - `figures/05_unrest_index.png` - Composite unrest index with thresholds
 - `figures/06_summary_dashboard.png` - All-in-one summary panel
 - `figures/07_hybrid_comparison.png` - Statistical vs Deep Learning comparison
+- `results/summary_figure.png` - Advanced Structural Modeling Results
 
 ---
 
@@ -225,14 +229,25 @@ Recursive backtesting compares statistical and deep learning models:
 
 ---
 
-## 11. Reproducibility
+## 11. Advanced Structural Models
+
+To provide a comprehensive geophysical context, the pipeline implements additional advanced modeling techniques:
+
+- **SARIMA**: Seasonal AutoRegressive Integrated Moving Average for background rate modeling and forecasting.
+- **Benioff Strain**: Cumulative seismic energy release proxy over time.
+- **Coulomb Stress Drop (CSD)**: Estimation of stress release per event to track rupture mechanics.
+- **Critical Seismicity Index (CSI)**: A normalized indicator combining event rate and magnitude variance to detect approaching tipping points.
+- **Changepoint Detection**: Algorithm to identify significant structural shifts in the unrest regime.
+
+---
+
+## 12. Reproducibility
 
 All analyses can be reproduced by executing:
 
 ```bash
 pip install -r requirements.txt
 python run_pipeline.py
-python scripts/generate_paper_figures.py
 ```
 
 Configuration parameters are specified in `config.yaml`.

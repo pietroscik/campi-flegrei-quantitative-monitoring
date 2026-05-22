@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, Any
 
 # -----------------------------
 # Threshold dinamici (robusti) con percentili statistici
@@ -8,8 +8,9 @@ from typing import Dict, Tuple
 
 def compute_thresholds(
     series: pd.Series,
-    percentiles: Tuple[float, float, float, float] = (0.25, 0.50, 0.75, 0.90)
-) -> Dict[str, float]:
+    percentiles: Tuple[float, float, float, float] = (0.25, 0.50, 0.75, 0.90),
+    window_days: Optional[int] = None
+) -> Dict[str, Any]:
     """
     Compute robust thresholds using percentile-based approach.
     
@@ -19,11 +20,13 @@ def compute_thresholds(
         Input time series
     percentiles : tuple
         Percentiles for threshold computation (low, baseline, attention, alert)
+    window_days : int, optional
+        If provided, computes rolling percentiles over the specified window.
         
     Returns
     -------
     dict
-        Dictionary with threshold values
+        Dictionary with threshold values (static or time-varying)
         
     Notes
     -----
@@ -31,24 +34,34 @@ def compute_thresholds(
     making the method robust to non-Gaussian distributions typical
     of volcanic unrest indicators.
     """
-    q_low = series.quantile(percentiles[0])
-    q_baseline = series.quantile(percentiles[1])
-    q_attention = series.quantile(percentiles[2])
-    q_alert = series.quantile(percentiles[3])
+    if window_days is not None:
+        roller = series.rolling(f"{window_days}D", min_periods=1)
+        q_low = roller.quantile(percentiles[0])
+        q_baseline = roller.quantile(percentiles[1])
+        q_attention = roller.quantile(percentiles[2])
+        q_alert = roller.quantile(percentiles[3])
+        extreme = roller.max()
+    else:
+        q_low = series.quantile(percentiles[0])
+        q_baseline = series.quantile(percentiles[1])
+        q_attention = series.quantile(percentiles[2])
+        q_alert = series.quantile(percentiles[3])
+        extreme = series.max()
 
     return {
         "low": q_low,
         "baseline": q_baseline,
         "attention": q_attention,
         "alert": q_alert,
-        "extreme": series.max()  # Add extreme level for context
+        "extreme": extreme  # Add extreme level for context
     }
 
 
 def compute_thresholds_robust(
     series: pd.Series,
-    n_sigma: Tuple[float, float, float] = (1.5, 2.5, 3.5)
-) -> Dict[str, float]:
+    n_sigma: Tuple[float, float, float] = (1.5, 2.5, 3.5),
+    window_days: Optional[int] = None
+) -> Dict[str, Any]:
     """
     Compute thresholds using median + MAD (robust to outliers).
     
@@ -58,20 +71,35 @@ def compute_thresholds_robust(
         Input time series
     n_sigma : tuple
         Number of MAD deviations for each threshold level
+    window_days : int, optional
+        If provided, computes rolling robust thresholds.
         
     Returns
     -------
     dict
-        Dictionary with threshold values based on robust statistics
+        Dictionary with threshold values (static or time-varying) based on robust statistics
     """
-    median = series.median()
-    mad = np.median(np.abs(series - median))
-    
-    # Convert MAD to sigma equivalent (for normal distribution: sigma ≈ 1.4826 * MAD)
-    sigma_robust = 1.4826 * mad
-    
-    if sigma_robust < 1e-10:
-        sigma_robust = series.std()
+    if window_days is not None:
+        roller = series.rolling(f"{window_days}D", min_periods=1)
+        median = roller.median()
+        
+        def rolling_mad(x):
+            return np.median(np.abs(x - np.median(x)))
+            
+        mad = roller.apply(rolling_mad, raw=True)
+        std = roller.std()
+        
+        sigma_robust = 1.4826 * mad
+        sigma_robust = sigma_robust.where(sigma_robust >= 1e-10, std).fillna(0.0)
+    else:
+        median = series.median()
+        mad = np.median(np.abs(series - median))
+        
+        # Convert MAD to sigma equivalent (for normal distribution: sigma ≈ 1.4826 * MAD)
+        sigma_robust = 1.4826 * mad
+        
+        if sigma_robust < 1e-10:
+            sigma_robust = series.std()
     
     return {
         "low": median - n_sigma[0] * sigma_robust,
@@ -88,7 +116,7 @@ def compute_thresholds_robust(
 
 def classify_unrest(
     series: pd.Series,
-    thresholds: Dict[str, float],
+    thresholds: Dict[str, Any],
     method: str = "percentile"
 ) -> np.ndarray:
     """
@@ -219,7 +247,7 @@ def compute_alert_flag(
     trend_window: int = 30,
     persistence_threshold: float = 0.6,
     trend_threshold: float = 0.0
-) -> pd.Series:
+) -> Tuple[pd.Series, pd.Series, pd.Series]:
     """
     Compute final alert flag using multiple criteria.
     
@@ -243,8 +271,9 @@ def compute_alert_flag(
         
     Returns
     -------
-    pd.Series
-        Binary alert flag (1 = alert, 0 = no alert)
+    tuple
+        (combined_alert_flag, stat_alert_flag, dl_alert_flag)
+        Each is a pd.Series with binary flags
     """
     # Compute persistence
     persistence = compute_persistence(
@@ -266,9 +295,14 @@ def compute_alert_flag(
     ]
     
     # Alert requires all conditions (can be relaxed)
-    alert_flag = np.all(alert_conditions, axis=0).astype(int)
+    stat_alert = pd.Series(np.all(alert_conditions, axis=0).astype(int), index=df.index)
     
-    return alert_flag
+    if "dl_is_anomaly" in df.columns:
+        dl_alert = df["dl_is_anomaly"].fillna(0).astype(int)
+        combined_alert = np.maximum(stat_alert, dl_alert)
+        return combined_alert, stat_alert, dl_alert
+        
+    return stat_alert, stat_alert, pd.Series(0, index=df.index)
 
 
 # -----------------------------
@@ -280,7 +314,8 @@ def run_warning_system(
     output_dir: str = "data/processed",
     threshold_method: str = "percentile",
     persistence_window: int = 21,
-    trend_window: int = 30
+    trend_window: int = 30,
+    threshold_window_days: Optional[int] = 730  # Default to 2 years for rolling percentiles
 ) -> pd.DataFrame:
     """
     Complete early warning system pipeline with robust statistical parameters.
@@ -297,6 +332,8 @@ def run_warning_system(
         Window for persistence computation (days)
     trend_window : int
         Window for trend computation (days)
+    threshold_window_days : int, optional
+        Window for rolling thresholds (days). None for static.
         
     Returns
     -------
@@ -314,6 +351,17 @@ def run_warning_system(
         df = df.set_index("time")
     elif df.index.name == 'time':
         df.index = pd.to_datetime(df.index)
+        
+    # Try to load Deep Learning anomalies to integrate into the Early Warning System
+    dl_path = os.path.join(output_dir, "dl_anomalies.csv")
+    if os.path.exists(dl_path):
+        print("\n[INTEGRATING DEEP LEARNING ANOMALIES]")
+        dl_df = pd.read_csv(dl_path)
+        dl_df["time"] = pd.to_datetime(dl_df["time"])
+        dl_df = dl_df.set_index("time")
+        # Merge DL columns into the main dataframe
+        df = df.join(dl_df[["dl_anomaly_score", "dl_is_anomaly"]], how="left")
+        print(f"  DL anomalies successfully merged. Found {df['dl_is_anomaly'].sum()} DL alert flags.")
     
     print("\n[EARLY WARNING SYSTEM]")
     print(f"  Input records: {len(df)}")
@@ -321,19 +369,35 @@ def run_warning_system(
     
     # Compute thresholds
     print(f"\n[THRESHOLD COMPUTATION - Method: {threshold_method}]")
-    if threshold_method == "robust":
-        thresholds = compute_thresholds_robust(df["unrest_index"])
-        print(f"  Median: {df['unrest_index'].median():.4f}")
-        print(f"  MAD: {np.median(np.abs(df['unrest_index'] - df['unrest_index'].median())):.4f}")
+    if threshold_window_days:
+        print(f"  Rolling Window: {threshold_window_days} days")
     else:
-        thresholds = compute_thresholds(df["unrest_index"])
-        print(f"  Percentiles:")
-        print(f"    25th (low): {thresholds['low']:.4f}")
-        print(f"    50th (baseline): {thresholds['baseline']:.4f}")
-        print(f"    75th (attention): {thresholds['attention']:.4f}")
-        print(f"    90th (alert): {thresholds['alert']:.4f}")
-    
-    print(f"    Extreme max: {thresholds.get('extreme', df['unrest_index'].max()):.4f}")
+        print(f"  Mode: Static")
+        
+    if threshold_method == "robust":
+        thresholds = compute_thresholds_robust(df["unrest_index"], window_days=threshold_window_days)
+        if threshold_window_days:
+            print(f"  Median (latest): {thresholds['baseline'].iloc[-1]:.4f}")
+            print(f"  MAD (latest equivalent): {(thresholds['attention'].iloc[-1] - thresholds['baseline'].iloc[-1]) / 1.5:.4f}")
+        else:
+            print(f"  Median: {thresholds['baseline']:.4f}")
+            print(f"  MAD: {np.median(np.abs(df['unrest_index'] - df['unrest_index'].median())):.4f}")
+    else:
+        thresholds = compute_thresholds(df["unrest_index"], window_days=threshold_window_days)
+        if threshold_window_days:
+            print(f"  Percentiles (latest window):")
+            print(f"    25th (low): {thresholds['low'].iloc[-1]:.4f}")
+            print(f"    50th (baseline): {thresholds['baseline'].iloc[-1]:.4f}")
+            print(f"    75th (attention): {thresholds['attention'].iloc[-1]:.4f}")
+            print(f"    90th (alert): {thresholds['alert'].iloc[-1]:.4f}")
+            print(f"    Extreme max: {thresholds['extreme'].iloc[-1]:.4f}")
+        else:
+            print(f"  Percentiles:")
+            print(f"    25th (low): {thresholds['low']:.4f}")
+            print(f"    50th (baseline): {thresholds['baseline']:.4f}")
+            print(f"    75th (attention): {thresholds['attention']:.4f}")
+            print(f"    90th (alert): {thresholds['alert']:.4f}")
+            print(f"    Extreme max: {thresholds.get('extreme', df['unrest_index'].max()):.4f}")
 
     # Classify unrest levels
     df["state"] = classify_unrest(
@@ -341,6 +405,11 @@ def run_warning_system(
         thresholds,
         method=threshold_method
     )
+    
+    # Save dynamic thresholds to dataframe for visualization
+    df["threshold_baseline"] = thresholds["baseline"]
+    df["threshold_attention"] = thresholds["attention"]
+    df["threshold_alert"] = thresholds["alert"]
 
     print(f"\n[UNREST CLASSIFICATION]")
     state_counts = df["state"].value_counts()
@@ -365,15 +434,21 @@ def run_warning_system(
     )
 
     # Compute final alert flag (multi-criteria)
-    df["alert_flag"] = compute_alert_flag(
+    combined_alert, stat_alert, dl_alert = compute_alert_flag(
         df,
         persistence_window=persistence_window,
         trend_window=trend_window
     )
+    df["stat_alert_flag"] = stat_alert
+    df["dl_alert_flag"] = dl_alert
+    df["alert_flag"] = combined_alert
     
     n_alerts = df["alert_flag"].sum()
     print(f"\n[ALERT STATUS]")
     print(f"  Total alerts triggered: {n_alerts}")
+    if "dl_is_anomaly" in df.columns:
+        print(f"    - Statistical alerts: {stat_alert.sum()}")
+        print(f"    - Deep Learning alerts: {dl_alert.sum()}")
     if n_alerts > 0:
         alert_dates = df[df["alert_flag"] == 1].index
         print(f"  Alert dates: {alert_dates.tolist()[:5]}{'...' if n_alerts > 5 else ''}")

@@ -1,0 +1,25 @@
+
+Figure 1: Summary of Campi Flegrei Monitoring System Results
+
+(A) Seismicity Distribution: Spatial distribution of earthquakes (M ≥ 0.5) within the 
+    Campi Flegrei caldera region. Circle sizes are proportional to magnitude. 
+    The dashed blue circle indicates the approximate caldera boundary.
+
+(B) Temporal b-value Evolution: Rolling b-value estimates (window = 100 events) over 
+    the analysis period. Gray dashed line shows the mean b-value. Orange dotted lines 
+    indicate ±2 standard deviations. Red dots highlight statistically significant 
+    anomalies detected by Z-score and quantile methods.
+
+(C) Multi-Signal Unrest Index: Composite index integrating seismicity rate, b-value, 
+    and ground uplift. Green region: NORMAL state (≤50th percentile). Yellow region: 
+    ELEVATED state (50th-75th percentile). Orange region: HIGH state (75th-90th 
+    percentile). Red region: CRITICAL state (>90th percentile). Alert flags are 
+    triggered when CRITICAL state persists >60% over 7-day window.
+
+(D) ETAS Model Fit: Comparison of observed daily seismicity rate (blue bars) with 
+    ETAS model predictions (red line). Green dashed line shows the background 
+    seismicity rate (μ parameter). The ETAS model captures both background activity 
+    and triggered sequences following larger events.
+
+Parameters shown are from synthetic data for demonstration purposes. 
+Run the full pipeline with real INGV data for actual monitoring results.

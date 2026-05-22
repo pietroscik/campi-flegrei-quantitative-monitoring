@@ -2,46 +2,29 @@ version: "3.8"
 
 services:
 
-  cf-monitoring:
+  pipeline:
     build: .
-    container_name: cf_monitoring
+    container_name: cf_pipeline
     volumes:
       - .:/app
-      - ./data:/app/data
-      - ./logs:/app/logs
-
-  api:
-    build: ./services/api
-    ports:
-      - "8000:8000"
-    depends_on:
-      - cf-monitoring
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+    command: python run_pipeline.py
 
   dashboard:
-    build: ./services/dashboard
+    build: .
+    container_name: cf_dashboard
     ports:
       - "8501:8501"
     depends_on:
-      - api
+      - pipeline
     volumes:
-      - ./data:/app/data
-
-  worker:
-    build: ./services/worker
-    command: python run_cycle.py
-    depends_on:
-      - cf-monitoring
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - .:/app
+    command: streamlit run services/dashboard/app.py --server.address=0.0.0.0
 
   stream:
-    build: ./services/stream
-    command: python engine.py
+    build: .
+    container_name: cf_stream
     depends_on:
-      - worker
+      - pipeline
     volumes:
-      - ./data:/app/data
+      - .:/app
+    command: python services/stream/engine.py

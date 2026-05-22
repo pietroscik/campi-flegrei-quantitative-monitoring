@@ -175,14 +175,16 @@ Multi-Signal Fusion → Early Warning → ETAS MLE
 | Multi-signal | `data/processed/unrest_index.csv` | Composite unrest index |
 | Early Warning | `data/processed/early_warning_system.csv` | Alert states & flags |
 | ETAS | `data/processed/etas_params.csv` | Fitted ETAS parameters |
+| Deep Learning | `data/processed/dl_forecast.csv` | LSTM 7-day rate forecast |
+| Deep Learning | `data/processed/dl_anomalies.csv` | VAE anomaly scores |
+| Adv. Modeling | `data/processed/*_output.csv` | SARIMA, Benioff, CSD, CSI, Changepoint |
 
-### 3.3 Figure: Synthetic Results Summary
+### 3.3 Figures and Dashboards
 
-See `results/summary_figure.png` for visualization of:
-- (A) Map of seismicity with b-value spatial distribution
-- (B) Temporal evolution of b-value with anomaly highlights
-- (C) Multi-signal unrest index with threshold bands
-- (D) ETAS model fit comparison (observed vs. modeled rate)
+See the `figures/` and `results/` directories for visualizations:
+- `figures/06_summary_dashboard.png`: All-in-one monitoring dashboard (Seismicity, GR fit, b-value, Anomalies, Unrest Index, Alerts)
+- `results/summary_figure.png`: Advanced Modeling Results (SARIMA forecast, Benioff strain, CSD, CSI)
+- `figures/07_hybrid_comparison.png`: Statistical vs Deep Learning performance evaluation
 
 ### 3.4 Hybrid Model Comparison
 

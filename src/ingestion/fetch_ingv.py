@@ -26,6 +26,9 @@ def fetch_ingv_events(starttime, endtime, minmag=0.0, maxlat=None, minlat=None,
 
     response = requests.get(BASE_URL, params=params, timeout=30)
 
+    if response.status_code == 204:
+        return pd.DataFrame()
+
     if response.status_code != 200:
         raise Exception(f"INGV request failed: {response.status_code}")
 

@@ -3,6 +3,39 @@ import numpy as np
 from typing import Tuple, Optional
 
 # -----------------------------
+# Magnitude of Completeness (Mc)
+# -----------------------------
+
+def compute_maxc(magnitudes: np.ndarray, bin_size: float = 0.1) -> float:
+    """
+    Compute the Magnitude of Completeness (Mc) using the Maximum Curvature (MAXC) method.
+    
+    Parameters
+    ----------
+    magnitudes : np.ndarray
+        Array of magnitude values
+    bin_size : float
+        Bin size for the magnitude histogram
+        
+    Returns
+    -------
+    float
+        Estimated completeness magnitude
+    """
+    if len(magnitudes) == 0:
+        return np.nan
+        
+    min_mag = np.floor(np.min(magnitudes) / bin_size) * bin_size
+    max_mag = np.ceil(np.max(magnitudes) / bin_size) * bin_size
+    bins = np.arange(min_mag, max_mag + bin_size * 1.5, bin_size)
+    hist, bin_edges = np.histogram(magnitudes, bins=bins)
+    if len(hist) == 0:
+        return np.nan
+    max_idx = np.argmax(hist)
+    mc_maxc = bin_edges[max_idx]
+    return float(mc_maxc)
+
+# -----------------------------
 # Gutenberg-Richter b-value
 # b = log10(e) / (mean(M) - M0)
 # -----------------------------
@@ -97,6 +130,7 @@ def rolling_b_value(
     window_events: int = 300,  # Increased from 100 to 300 for statistical stability
     min_events: int = 150,     # Minimum events for computation
     m0: float = 1.0,           # Magnitude of completeness for Campi Flegrei
+    dynamic_m0: bool = True,   # Compute dynamic Mc using MAXC
     step: int = 50             # Step size for overlapping windows
 ) -> pd.DataFrame:
     """
@@ -112,6 +146,8 @@ def rolling_b_value(
         Minimum events required to compute b-value
     m0 : float
         Magnitude completeness threshold
+    dynamic_m0 : bool
+        If True, computes M0 dynamically per window using MAXC
     step : int
         Step size between consecutive windows
         
@@ -133,6 +169,7 @@ def rolling_b_value(
     times = []
     window_centers = []
     event_counts = []
+    m0_used = []
 
     mags = df["magnitude"].values
     t = df["time"].values
@@ -142,14 +179,19 @@ def rolling_b_value(
         window_mags = mags[i:i+window_events]
         window_times = t[i:i+window_events]
         
+        current_m0 = compute_maxc(window_mags) if dynamic_m0 else m0
+        
+        if np.isnan(current_m0):
+            continue
+            
         # Filter by magnitude completeness
-        valid_mask = window_mags >= m0
+        valid_mask = window_mags >= current_m0
         n_valid = np.sum(valid_mask)
         
         if n_valid < min_events:
             continue
 
-        b_val, b_err = compute_b_value_uncertainty(window_mags[valid_mask], m0=m0)
+        b_val, b_err = compute_b_value_uncertainty(window_mags[valid_mask], m0=current_m0)
         
         if not np.isnan(b_val):
             b_values.append(b_val)
@@ -158,13 +200,15 @@ def rolling_b_value(
             times.append(window_times[len(window_times)//2])
             window_centers.append(i + window_events//2)
             event_counts.append(n_valid)
+            m0_used.append(current_m0)
 
     result_df = pd.DataFrame({
         "time": times,
         "b_value": b_values,
         "b_error": b_errors,
         "event_count": event_counts,
-        "window_center_idx": window_centers
+        "window_center_idx": window_centers,
+        "m0": m0_used
     })
 
     return result_df
@@ -175,7 +219,8 @@ def rolling_b_value_time_based(
     window_days: int = 90,      # 3-month windows for seasonal/volcanic cycles
     step_days: int = 30,        # Monthly steps
     min_events: int = 100,      # Minimum events per window
-    m0: float = 1.0
+    m0: float = 1.0,
+    dynamic_m0: bool = True
 ) -> pd.DataFrame:
     """
     Compute rolling b-value using fixed time windows.
@@ -204,6 +249,7 @@ def rolling_b_value_time_based(
     b_errors = []
     times = []
     event_counts = []
+    m0_used = []
 
     start_date = df["time"].min()
     end_date = df["time"].max()
@@ -217,13 +263,20 @@ def rolling_b_value_time_based(
         
         if len(window_df) >= min_events:
             window_mags = window_df["magnitude"].values
-            b_val, b_err = compute_b_value_uncertainty(window_mags, m0=m0)
             
-            if not np.isnan(b_val):
-                b_values.append(b_val)
-                b_errors.append(b_err)
-                times.append(current_start + pd.Timedelta(days=window_days//2))
-                event_counts.append(len(window_df))
+            current_m0 = compute_maxc(window_mags) if dynamic_m0 else m0
+            
+            if not np.isnan(current_m0):
+                valid_mask = window_mags >= current_m0
+                if np.sum(valid_mask) >= min_events:
+                    b_val, b_err = compute_b_value_uncertainty(window_mags[valid_mask], m0=current_m0)
+                    
+                    if not np.isnan(b_val):
+                        b_values.append(b_val)
+                        b_errors.append(b_err)
+                        times.append(current_start + pd.Timedelta(days=window_days//2))
+                        event_counts.append(len(window_df))
+                        m0_used.append(current_m0)
         
         current_start += pd.Timedelta(days=step_days)
 
@@ -231,7 +284,8 @@ def rolling_b_value_time_based(
         "time": times,
         "b_value": b_values,
         "b_error": b_errors,
-        "event_count": event_counts
+        "event_count": event_counts,
+        "m0": m0_used
     })
 
 
@@ -319,10 +373,13 @@ def detect_bvalue_changepoints(
     if b_std < 0.01:
         return []
     
-    z_scores = np.abs(zscore(b_vals))
+    # Usa nan_policy='omit' per evitare che i NaN invalidino l'intero array di output
+    z_scores = np.abs(zscore(b_vals, nan_policy='omit'))
     
     # Identify potential change points (|z| > 2)
-    potential_cps = np.where(z_scores > 2.0)[0]
+    # Sopprime i warning generati dal confronto logico (>) con eventuali valori NaN
+    with np.errstate(invalid='ignore'):
+        potential_cps = np.where(z_scores > 2.0)[0]
     
     # Filter by minimum segment length
     if len(potential_cps) == 0:
@@ -344,6 +401,7 @@ def run_b_analysis(
     input_path: str = "data/processed/catalog_clean.csv",
     output_dir: str = "data/processed",
     m0: float = 1.0,
+    dynamic_m0: bool = True,
     window_events: int = 300,
     window_days: int = 90,
     config: dict = None
@@ -377,6 +435,7 @@ def run_b_analysis(
     # Override with config if provided
     if config:
         m0 = config.get('b_value', {}).get('m0', m0)
+        dynamic_m0 = config.get('b_value', {}).get('dynamic_m0', dynamic_m0)
         window_events = config.get('b_value', {}).get('window_events_medium', window_events)
         window_days = config.get('data', {}).get('temporal_windows', {}).get('short_term', window_days)
     
@@ -393,12 +452,13 @@ def run_b_analysis(
     print(f"  95% CI: [{global_results['ci_lower']:.4f}, {global_results['ci_upper']:.4f}]")
 
     # Rolling b-value (event-based windows) - using configured window size
-    rolling_event = rolling_b_value(df, window_events=window_events, m0=m0)
+    rolling_event = rolling_b_value(df, window_events=window_events, m0=m0, dynamic_m0=dynamic_m0)
     rolling_event_path = os.path.join(output_dir, "b_value_rolling_events.csv")
     rolling_event.to_csv(rolling_event_path, index=False)
     
     print(f"\n[ROLLING B-VALUE - EVENT BASED]")
     print(f"  Window size: {window_events} events")
+    print(f"  Dynamic Mc (MAXC): {dynamic_m0}")
     print(f"  Number of windows: {len(rolling_event)}")
     if len(rolling_event) > 0:
         print(f"  Mean b: {rolling_event['b_value'].mean():.4f}")
@@ -406,12 +466,13 @@ def run_b_analysis(
         print(f"  Saved to: {rolling_event_path}")
 
     # Rolling b-value (time-based windows) - using configured time window
-    rolling_time = rolling_b_value_time_based(df, window_days=window_days, m0=m0)
+    rolling_time = rolling_b_value_time_based(df, window_days=window_days, m0=m0, dynamic_m0=dynamic_m0)
     rolling_time_path = os.path.join(output_dir, "b_value_rolling_time.csv")
     rolling_time.to_csv(rolling_time_path, index=False)
     
     print(f"\n[ROLLING B-VALUE - TIME BASED]")
     print(f"  Window size: {window_days} days")
+    print(f"  Dynamic Mc (MAXC): {dynamic_m0}")
     print(f"  Number of windows: {len(rolling_time)}")
     if len(rolling_time) > 0:
         print(f"  Mean b: {rolling_time['b_value'].mean():.4f}")
