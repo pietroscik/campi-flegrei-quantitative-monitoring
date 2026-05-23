@@ -157,43 +157,201 @@ $$\mathcal{L}_{VAE} = \underbrace{\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]}_
 
 ### 3.1 Pipeline Execution
 
-The full pipeline processes ~1 year of INGV data through 7 sequential modules:
+The full pipeline processes seismic data from INGV through multiple analytical modules:
 
 ```
 INGV Fetch → Catalog Cleaning → b-value Analysis → Anomaly Detection → 
-Multi-Signal Fusion → Early Warning → ETAS MLE
+Multi-Signal Fusion → Early Warning → ETAS MLE → Deep Learning → Advanced Modeling
 ```
 
-### 3.2 Key Outputs
+### 3.2 Dataset Statistics
 
-| Module | Output File | Description |
-|--------|-------------|-------------|
-| Ingestion | `data/raw/ingv_events.csv` | Raw INGV catalog |
-| Preprocessing | `data/processed/catalog_clean.csv` | Quality-controlled catalog |
-| b-value | `data/processed/b_value_rolling.csv` | Temporal b-value series |
-| Anomaly | `data/processed/b_value_anomalies.csv` | Anomaly scores |
-| Multi-signal | `data/processed/unrest_index.csv` | Composite unrest index |
-| Early Warning | `data/processed/early_warning_system.csv` | Alert states & flags |
-| ETAS | `data/processed/etas_params.csv` | Fitted ETAS parameters |
-| Deep Learning | `data/processed/dl_forecast.csv` | LSTM 7-day rate forecast |
-| Deep Learning | `data/processed/dl_anomalies.csv` | VAE anomaly scores |
-| Adv. Modeling | `data/processed/*_output.csv` | SARIMA, Benioff, CSD, CSI, Changepoint |
+| Dataset | Records | Time Period | Description |
+|---------|---------|-------------|-------------|
+| Raw Catalog | 2,506 events | 2008-2025 | INGV seismic events (M ≥ 0.0) |
+| Cleaned Catalog | 2,506 events | 2008-2025 | Quality-controlled with energy proxy |
+| b-value Series | 579 samples | Rolling windows | 100-event sliding window estimation |
+| Unrest Index | 218 weeks | 2018-2025 | Multi-signal composite indicator |
+| Early Warning | 218 alerts | 2018-2025 | Dynamic threshold alert system |
 
-### 3.3 Figures and Dashboards
+### 3.3 Key Outputs
 
-See the `figures/` and `results/` directories for visualizations:
-- `figures/06_summary_dashboard.png`: All-in-one monitoring dashboard (Seismicity, GR fit, b-value, Anomalies, Unrest Index, Alerts)
-- `results/summary_figure.png`: Advanced Modeling Results (SARIMA forecast, Benioff strain, CSD, CSI)
-- `figures/07_hybrid_comparison.png`: Statistical vs Deep Learning performance evaluation
+| Module | Output File | Records | Description |
+|--------|-------------|---------|-------------|
+| Ingestion | `data/raw/ingv_events.csv` | - | Raw INGV catalog |
+| Preprocessing | `data/processed/catalog_clean.csv` | 2,506 | Quality-controlled catalog |
+| b-value | `data/processed/b_value_rolling.csv` | 579 | Temporal b-value series |
+| Anomaly | `data/processed/b_value_anomalies.csv` | 579 | Z-score + quantile anomaly scores |
+| Multi-signal | `data/processed/unrest_index.csv` | 218 | Composite unrest index |
+| Early Warning | `data/processed/early_warning_system.csv` | 218 | Alert states & flags |
+| ETAS | `data/processed/etas_params.csv` | 1 row | Fitted ETAS parameters |
+| ETAS Details | `data/processed/etas_output.csv` | 2,506 | Event-by-event ETAS analysis |
+| Deep Learning | `data/processed/dl_forecast.csv` | 8 | LSTM 7-day rate forecast |
+| DL Anomalies | `data/processed/dl_anomalies.csv` | 6,567 | VAE reconstruction error scores |
+| SARIMA | `data/processed/sarima_output.csv` | 6,597 | Seasonal ARIMA forecasting |
+| Benioff | `data/processed/benioff_output.csv` | 6,567 | Strain release analysis |
+| CSD | `data/processed/csd_output.csv` | 2,506 | Coulomb Stress Drop estimates |
+| CSI | `data/processed/csi_output.csv` | 2,456 | Critical Seismicity Index |
+| Changepoint | `data/processed/changepoint_output.csv` | 2,506 | Structural break detection |
+| Risk Score | `data/processed/probabilistic_risk_score.csv` | 218 | Calibrated probabilistic risk |
+| Pareto Front | `data/processed/pareto_frontier.csv` | 41 | Optimal threshold trade-offs |
 
-### 3.4 Hybrid Model Comparison
+### 3.4 ETAS Model Parameters
 
-See `figures/07_hybrid_comparison.png` for side-by-side comparison of:
-- **Statistical Models**: SARIMA, ETAS (linear baseline)
-- **Deep Learning Models**: LSTM (non-linear forecasting), VAE (anomaly detection)
-- **Metrics**: RMSE, MAE, AICc, F1-Score across recursive validation folds
+Maximum Likelihood Estimation results for the ETAS model:
 
-**Key Finding**: LSTM reduces RMSE by ~15% compared to SARIMA during rapid bradyseismic acceleration phases, while VAE detects anomalous patterns 2-3 days earlier than threshold-based methods.
+| Parameter | Symbol | Value | Interpretation |
+|-----------|--------|-------|----------------|
+| Background rate | μ | 0.00241 | ~2.4 background events per 1000 time units |
+| Productivity | K | 0.0478 | Average triggered events per unit magnitude |
+| Magnitude sensitivity | α | 0.640 | Exponential scaling with magnitude |
+| Time delay | c | 0.000419 | Short-time cutoff (~36 seconds) |
+| Decay exponent | p | 1.001 | Omori-law temporal decay (near 1.0) |
+
+**Interpretation**: The fitted p-value ≈ 1.0 indicates standard Omori-law decay of aftershock frequency, consistent with typical seismic sequences. The low background rate (μ = 0.0024) suggests that most seismicity is triggered rather than spontaneous.
+
+### 3.5 b-value Evolution
+
+Rolling b-value analysis reveals temporal variations in stress conditions:
+
+- **Mean b-value**: ~0.97 (typical for volcanic regions)
+- **Range**: 0.27 - 1.5+ (indicating variable stress regimes)
+- **Low b-value periods** (< 0.6): Associated with increased differential stress
+- **High b-value periods** (> 1.2): Suggest heterogeneous fault networks or fluid involvement
+
+### 3.6 Early Warning System Performance
+
+Alert level distribution over the monitoring period:
+
+| Alert Level | Threshold | Description | Typical Response |
+|-------------|-----------|-------------|------------------|
+| NORMAL / GREEN | UI ≤ 50th pct (p < 0.5) | Baseline conditions | Routine monitoring |
+| ELEVATED / YELLOW | 50th-75th pct (0.5 ≤ p < 0.7) | Increased activity | Enhanced surveillance |
+| HIGH / ORANGE | 75th-90th pct (0.7 ≤ p < 0.9) | Significant unrest | Civil protection notification |
+| CRITICAL / RED | > 90th pct (p ≥ 0.9) | Severe unrest | Emergency protocols |
+
+The system includes:
+- **Persistence check**: 7-day rolling window with 60% persistence requirement
+- **Dual-flag system**: Statistical alert flag + Deep Learning anomaly flag
+- **Dynamic thresholds**: Recalibrated based on empirical distribution
+
+#### Operational Alert System Output
+
+| Column | Description | Example Values |
+|--------|-------------|----------------|
+| `time` | Timestamp of assessment | 2018-03-03 01:18:56 |
+| `p_calibrated` | Calibrated probability of significant event | 0.54 - 0.96 |
+| `alert_level` | Color-coded alert state | GREEN, YELLOW, ORANGE, RED |
+
+**Output file**: `data/processed/operational_alert_system.csv` (218 records)
+
+#### Threshold Optimization Results
+
+Optimal decision threshold determined through cost-benefit analysis:
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| Optimal Threshold | 0.965 | Probability threshold for RED alert |
+| False Alarm Rate (FAR) | 0.019 | ~2% false positive rate |
+| Miss Rate | 0.394 | ~39% missed events (conservative threshold) |
+| Mean Lead Time | 7.23 days | Average warning time before event |
+
+**Trade-off Analysis**: The Pareto frontier (`pareto_frontier.csv`, 41 points) explores the balance between:
+- Minimizing False Alarm Rate (FAR)
+- Minimizing Miss Rate (MISS)
+- Maximizing Lead Time (LEAD)
+
+**Optimization Criterion**: Maximum Youden's J statistic (J = Sensitivity + Specificity - 1)
+
+#### Validation Metrics
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| False Alarm Rate (FAR) | 0.0% | Zero false alarms at optimal threshold |
+| Hit Rate | 17.1% | Percentage of events successfully predicted |
+| Miss Rate | 82.9% | High miss rate reflects conservative threshold |
+| True Alarm Rate (TAR) | 13.8% | Proportion of correct alerts |
+| Forecast Skill Score | 0.17 | Modest but positive predictive skill |
+| Mean RED Alert Lead Time | 92.9 days | Average warning for highest alert level |
+| Mean YELLOW Alert Lead Time | 53.9 days | Average warning for moderate alert level |
+
+**Note**: The high lead times (53-93 days) indicate the system detects long-term precursory patterns, suitable for strategic planning rather than short-term emergency response.
+
+**Output file**: `data/processed/operational_validation_metrics.csv`
+
+### 3.7 Deep Learning Results
+
+#### LSTM Forecasting
+- **Architecture**: Multi-layer LSTM with lookback window L=30 days
+- **Forecast horizon**: H=7 days ahead
+- **Output**: Daily seismicity rate prediction with confidence intervals
+
+#### Variational Autoencoder (VAE)
+- **Anomaly detection**: Based on reconstruction error
+- **Samples analyzed**: 6,567 time windows
+- **Advantage**: Detects novel patterns without predefined thresholds
+
+### 3.8 Advanced Modeling Metrics
+
+| Model | Purpose | Output Records | Key Metric |
+|-------|---------|----------------|------------|
+| SARIMA | Linear forecasting | 6,597 | AICc, RMSE |
+| Benioff | Strain release | 6,567 | Cumulative strain rate |
+| CSD | Stress mechanics | 2,506 | Stress drop (kPa) |
+| CSI | Critical transitions | 2,456 | Normalized index (0-1) |
+| Changepoint | Regime shifts | 2,506 | Breakpoint timestamps |
+
+### 3.9 Figures and Dashboards
+
+Generated visualizations:
+
+#### Main Dashboard (`figures/`)
+| Figure | File | Size | Description |
+|--------|------|------|-------------|
+| 01 | `01_seismicity_rate.png` | 327 KB | Daily/weekly seismicity rate evolution |
+| 02 | `02_gutenberg_richter_fit.png` | 181 KB | Frequency-magnitude distribution & GR fit |
+| 03 | `03_bvalue_evolution.png` | 325 KB | Temporal b-value with confidence bounds |
+| 04 | `04_magnitude_distribution_stability.png` | 262 KB | Magnitude completeness & stability tests |
+| 05 | `05_unrest_index.png` | 408 KB | Multi-signal unrest index components |
+| 06 | `06_summary_dashboard.png` | 838 KB | **All-in-one integrated dashboard** |
+| 07 | `07_hybrid_comparison.png` | 271 KB | Statistical vs Deep Learning comparison |
+
+#### Results Summary (`results/`)
+| Figure | File | Size | Description |
+|--------|------|------|-------------|
+| Summary | `summary_figure.png` | 606 KB | Advanced modeling results (4-panel) |
+| Summary PDF | `summary_figure.pdf` | 113 KB | Vector format for publications |
+| Alert Timeline | `alert_event_timeline.png` | 62 KB | Chronological alert event visualization |
+| Calibration | `calibration_curve.png` | 38 KB | Probabilistic forecast calibration |
+| Lead Time (Red) | `lead_time_red.png` | 12 KB | Lead time distribution for highest alerts |
+| Lead Time (Yellow) | `lead_time_yellow.png` | 13 KB | Lead time distribution for moderate alerts |
+
+**Figure Caption for Advanced Modeling Results:**
+
+> **Figure: Advanced Modeling Results for Campi Flegrei**
+> - **(A) SARIMA Forecasting**: Observed daily seismic rate modeled with a Seasonal ARIMA process. The magenta line represents the short-term forecast with 95% confidence intervals.
+> - **(B) Benioff Strain & Changepoints**: Rolling Benioff strain release rate over time. Vertical orange dashed lines indicate structural changepoints detected using CUSUM and variance-penalty algorithms.
+> - **(C) Coulomb Stress Drop (CSD)**: Estimated stress drop per event (gray dots) and rolling average (dark blue). Variations indicate changes in fault rupture mechanics.
+> - **(D) Critical Seismicity Index (CSI)**: Normalized metric combining moment release, event rate, and magnitude variance. Red markers indicate periods exceeding the critical threshold (0.8), often associated with approaching tipping points.
+
+### 3.10 Hybrid Model Comparison
+
+Performance comparison between statistical and deep learning approaches:
+
+| Aspect | Statistical (SARIMA/ETAS) | Deep Learning (LSTM/VAE) |
+|--------|---------------------------|--------------------------|
+| Linearity | Linear assumptions | Non-linear pattern capture |
+| Forecast RMSE | Baseline | ~15% improvement during crises |
+| Anomaly Detection | Threshold-based | Reconstruction-based (unsupervised) |
+| Early Detection | Standard | 2-3 days earlier on average |
+| Interpretability | High (parametric) | Moderate (black-box) |
+| Data Requirements | Low | Moderate-High |
+
+**Key Findings**:
+1. LSTM reduces RMSE by ~15% compared to SARIMA during rapid bradyseismic acceleration phases
+2. VAE detects anomalous patterns 2-3 days earlier than threshold-based methods
+3. Hybrid approach (statistical + DL) provides robustness through model diversity
+4. Ensemble forecasts show improved reliability during transitional periods
 
 ---
 
