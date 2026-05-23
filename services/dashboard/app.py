@@ -249,11 +249,20 @@ try:
     st.caption("Campi Flegrei Quantitative Monitoring System | Sviluppato per fini di monitoraggio statistico avanzato.")
 
 except FileNotFoundError as e:
-    st.error(str(e))
+    st.error("File di dati non trovato. Assicurati che la pipeline sia stata eseguita correttamente.")
+except PermissionError as e:
+    st.error("Errore di accesso ai file. Verifica i permessi del sistema.")
+except pd.errors.EmptyDataError:
+    st.error("I file di dati sono vuoti. Esegui nuovamente la pipeline di elaborazione.")
 except Exception as e:
-    st.error(f"Si è verificato un errore critico durante il rendering della dashboard: {e}")
+    # Non esporre dettagli tecnici sensibili all'utente finale
+    st.error("Si è verificato un errore durante il caricamento della dashboard. Contatta l'amministratore di sistema.")
+    # Log dell'errore completo solo per debugging (in produzione usare logging)
+    # import logging
+    # logging.error(f"Dashboard error: {e}", exc_info=True)
 
-# Logica di Auto-refresh in background
+# Logica di Auto-refresh in background - con timeout massimo per evitare DoS
 if 'auto_refresh' in locals() and auto_refresh:
-    time.sleep(60)
+    max_refresh_time = int(os.getenv("MAX_REFRESH_TIME", "60"))
+    time.sleep(min(max_refresh_time, 60))  # Massimo 60 secondi
     st.rerun()

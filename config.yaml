@@ -45,3 +45,21 @@ early_warning:
   ui_window_days: 90          # 3-month window for unrest index
   alert_persistence: 0.6      # 60% persistence threshold
   critical_percentile: 0.90   # 90th percentile for CRITICAL state
+
+# Alert notification settings
+alerts:
+  # Telegram Bot configuration (optional - can also use env vars)
+  # telegram_bot_token: "YOUR_BOT_TOKEN"
+  # telegram_chat_id: "YOUR_CHAT_ID"
+  
+  # Alert thresholds
+  min_persistence: 0.5        # Minimum persistence to trigger alert (50%)
+  cooldown_hours:
+    CRITICAL: 1               # Notify every hour for critical
+    HIGH: 6                   # Notify every 6 hours for high
+    ELEVATED: 24              # Once per day for elevated
+    NORMAL: 24                # Once per day for status updates
+  
+  # Worker scheduling
+  worker_interval_minutes: 60 # Run analysis every 60 minutes
+  days_back: 7                # Analyze last 7 days of data
