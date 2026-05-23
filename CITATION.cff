@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Campi Flegrei Quantitative Monitoring System"
+abstract: "An integrated seismic monitoring system for the Campi Flegrei caldera combining Gutenberg-Richter b-value estimation, anomaly detection, multi-signal fusion, Early Warning System, ETAS stochastic modeling, and Hybrid Deep Learning architectures (LSTM, Autoencoders)."
+type: software
+authors:
+  - family-names: "Pietro"
+    given-names: "Scik"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+version: 1.0.0
+doi: "10.0000/placeholder-doi"
+date-released: 2024-01-01
+url: "https://github.com/your-repo/campi-flegrei-monitoring"
+keywords:
+  - "Campi Flegrei"
+  - "b-value"
+  - "anomaly detection"
+  - "ETAS"
+  - "LSTM"
+  - "Autoencoder"
+  - "Deep Learning"
+  - "early warning"
+  - "seismic monitoring"
+  - "volcanology"
+license: MIT
