@@ -1,1 +1,12 @@
-Nothing to output - the changes only include a source/config file (README.md) with no build artifacts, dependencies, or temp files that need to be ignored.
+# Data processing outputs
+data/processed/*.csv
+data/processed/*.json
+*.pyc
+__pycache__/
+*.log
+*.tmp
+*.swp
+.env
+.env.local
+.vscode/
+.idea/
