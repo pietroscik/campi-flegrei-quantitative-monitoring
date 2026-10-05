@@ -1,5 +1,7 @@
 # 🌋 Campi Flegrei Quantitative Monitoring System
 
+> ✅ **Stato**: Production-ready — framework di monitoraggio multivariato (Docker, test, CI); validazione GNSS reale in corso.
+
 ## Abstract
 
 This paper presents an integrated seismic monitoring system for the Campi Flegrei caldera, combining multiple analytical approaches: (1) Gutenberg-Richter b-value estimation with rolling window analysis, (2) anomaly detection via Z-score and quantile-based methods, (3) multi-signal fusion integrating seismic rate, b-value, and ground uplift data, (4) Early Warning System with dynamic thresholding and persistence checks, (5) ETAS (Epidemic Type Aftershock Sequence) stochastic modeling for background seismicity and triggering parameter estimation, and **(6) Hybrid Deep Learning architectures (LSTM, Autoencoders) for non-linear forecasting and unsupervised anomaly detection**. The system ingests real-time data from INGV catalogs and processes them through a reproducible pipeline with recursive validation.
@@ -34,7 +36,8 @@ The analysis focuses on the Campi Flegrei caldera region bounded by:
 
 ### 2.1 Data Ingestion
 
-Seismic data are retrieved from the INGV FDSN web service (`https://webservices.ingv.it/fdsnws/event/1/query`) in GeoJSON format. The ingestion module fetches events within specified temporal and spatial bounds, including:
+Seismic data are retrieved from the INGV FDSN web service (`https://webservi
+ces.ingv.it/fdsnws/event/1/query`) in GeoJSON format. The ingestion module fetches events within specified temporal and spatial bounds, including:
 - Origin time
 - Magnitude (local or duration scale)
 - Hypocentral depth
@@ -89,7 +92,8 @@ Signals are normalized using z-score normalization:
 $$X_{norm} = \frac{X - \mu_X}{\sigma_X}$$
 
 **Unrest Index**:
-$$UI(t) = 0.4 \cdot Rate_{norm}(t) + 0.3 \cdot [-b_{norm}(t)] + 0.3 \cdot Uplift_{norm}(t)$$
+$$UI(t) = 0.4 \cdot Rate_{norm}(t) + 0.3 
+\cdot [-b_{norm}(t)] + 0.3 \cdot Uplift_{norm}(t)$$
 
 Note: Negative b-value coefficient reflects inverse relationship (low b-value → high stress).
 
@@ -138,7 +142,8 @@ h_t = o_t \odot \tanh(C_t) & \text{(hidden state)}
 
 #### 2.8.2 Variational Autoencoder for Anomaly Detection
 
-VAEs learn a probabilistic mapping from high-dimensional feature space to a compressed latent representation:
+VAEs learn a probabilistic mapping from high-dim
+ensional feature space to a compressed latent representation:
 
 **Encoder**: $q_\phi(z|x) = \mathcal{N}(z; \mu_\phi(x), \Sigma_\phi(x))$
 
@@ -182,7 +187,8 @@ Multi-Signal Fusion → Early Warning → ETAS MLE → Deep Learning → Advance
 | Preprocessing | `data/processed/catalog_clean.csv` | 2,506 | Quality-controlled catalog |
 | b-value | `data/processed/b_value_rolling.csv` | 579 | Temporal b-value series |
 | Anomaly | `data/processed/b_value_anomalies.csv` | 579 | Z-score + quantile anomaly scores |
-| Multi-signal | `data/processed/unrest_index.csv` | 218 | Composite unrest index |
+| Multi-signal | `data/processed/unrest_index.csv` | 218 | Composite unrest index
+ |
 | Early Warning | `data/processed/early_warning_system.csv` | 218 | Alert states & flags |
 | ETAS | `data/processed/etas_params.csv` | 1 row | Fitted ETAS parameters |
 | ETAS Details | `data/processed/etas_output.csv` | 2,506 | Event-by-event ETAS analysis |
@@ -214,7 +220,8 @@ Maximum Likelihood Estimation results for the ETAS model:
 
 Rolling b-value analysis reveals temporal variations in stress conditions:
 
-- **Mean b-value**: ~0.97 (typical for volcanic regions)
+- **Mean b-value**: ~0.97 (typical
+ for volcanic regions)
 - **Range**: 0.27 - 1.5+ (indicating variable stress regimes)
 - **Low b-value periods** (< 0.6): Associated with increased differential stress
 - **High b-value periods** (> 1.2): Suggest heterogeneous fault networks or fluid involvement
@@ -256,7 +263,8 @@ Optimal decision threshold determined through cost-benefit analysis:
 | Miss Rate | 0.394 | ~39% missed events (conservative threshold) |
 | Mean Lead Time | 7.23 days | Average warning time before event |
 
-**Trade-off Analysis**: The Pareto frontier (`pareto_frontier.csv`, 41 points) explores the balance between:
+**Trade-off Analysis**: The Pareto frontier (`
+pareto_frontier.csv`, 41 points) explores the balance between:
 - Minimizing False Alarm Rate (FAR)
 - Minimizing Miss Rate (MISS)
 - Maximizing Lead Time (LEAD)
@@ -301,7 +309,8 @@ Optimal decision threshold determined through cost-benefit analysis:
 | CSI | Critical transitions | 2,456 | Normalized index (0-1) |
 | Changepoint | Regime shifts | 2,506 | Breakpoint timestamps |
 
-### 3.9 Figures and Dashboards
+### 3.9 F
+igures and Dashboards
 
 Generated visualizations:
 
@@ -331,7 +340,8 @@ Generated visualizations:
 > **Figure: Advanced Modeling Results for Campi Flegrei**
 > - **(A) SARIMA Forecasting**: Observed daily seismic rate modeled with a Seasonal ARIMA process. The magenta line represents the short-term forecast with 95% confidence intervals.
 > - **(B) Benioff Strain & Changepoints**: Rolling Benioff strain release rate over time. Vertical orange dashed lines indicate structural changepoints detected using CUSUM and variance-penalty algorithms.
-> - **(C) Coulomb Stress Drop (CSD)**: Estimated stress drop per event (gray dots) and rolling average (dark blue). Variations indicate changes in fault rupture mechanics.
+> - **(C) Coulomb Stress Drop (CSD)**: Estimated stress drop per event
+ (gray dots) and rolling average (dark blue). Variations indicate changes in fault rupture mechanics.
 > - **(D) Critical Seismicity Index (CSI)**: Normalized metric combining moment release, event rate, and magnitude variance. Red markers indicate periods exceeding the critical threshold (0.8), often associated with approaching tipping points.
 
 ### 3.10 Hybrid Model Comparison
@@ -382,7 +392,8 @@ The system supports three operational modes:
 
 #### Mode A: Full Historical Pipeline
 
-Reprocess complete historical catalog (default: 1 year):
+Reprocess complete historical catalog (defa
+ult: 1 year):
 
 ```bash
 python run_pipeline.py
@@ -457,7 +468,8 @@ See `docs/limitations.md` for detailed discussion.
 
 ## 6. Conclusions
 
-This monitoring system provides a quantitative framework for assessing volcanic unrest at Campi Flegrei through integration of multiple seismic indicators. The modular architecture allows easy extension to additional signals (e.g., geochemical, geodetic, gravimetric) and operational deployment in near-real-time mode.
+This monitoring system provides a quantitative framework f
+or assessing volcanic unrest at Campi Flegrei through integration of multiple seismic indicators. The modular architecture allows easy extension to additional signals (e.g., geochemical, geodetic, gravimetric) and operational deployment in near-real-time mode.
 
 **Important Statement**: The framework is not intended as a predictive system, but as a statistical monitoring tool for quantifying temporal changes in seismicity patterns. No deterministic forecasting claims are made.
 
