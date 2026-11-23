@@ -1,0 +1,22 @@
+project: Flegrei_Alert_2026
+maintainer: Flegrei Alert Team
+license: CC-BY-4.0
+version: 1.0.0
+
+datasets:
+  - name: GNSS_RITE
+    source: INGV RING (Rete Integrata Nazionale GNSS)
+    url: http://ring.gm.ingv.it/
+    format: csv
+    description: Serie temporali stazioni RITE/BEPOS
+    sha256: "" # Da compilare dopo il download (Fase 2.2)
+
+  - name: GOSSIP_Catalog
+    source: INGV Osservatorio Vesuviano
+    url: http://sismolab.ov.ingv.it/sismo/
+    format: csv
+    description: Catalogo sismico rilocato
+
+  - name: Geochemistry_Pisciarelli
+    source: INGV Bollettini Sorveglianza
+    description: Flusso CO2 e temperatura fumarole

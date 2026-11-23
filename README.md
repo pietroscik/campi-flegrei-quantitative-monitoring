@@ -2,6 +2,8 @@
 
 > ✅ **Stato**: Production-ready — framework di monitoraggio multivariato (Docker, test, CI); validazione GNSS reale in corso.
 
+> **Nota di consolidamento**: il contenuto unico del progetto gemello `Flegrei_Alert_2026` (script operativi, runbook, report e versioni avanzate di alcuni moduli) è stato migrato in [`legacy-flegrei-alert-2026/`](legacy-flegrei-alert-2026/).
+
 ## Abstract
 
 This paper presents an integrated seismic monitoring system for the Campi Flegrei caldera, combining multiple analytical approaches: (1) Gutenberg-Richter b-value estimation with rolling window analysis, (2) anomaly detection via Z-score and quantile-based methods, (3) multi-signal fusion integrating seismic rate, b-value, and ground uplift data, (4) Early Warning System with dynamic thresholding and persistence checks, (5) ETAS (Epidemic Type Aftershock Sequence) stochastic modeling for background seismicity and triggering parameter estimation, and **(6) Hybrid Deep Learning architectures (LSTM, Autoencoders) for non-linear forecasting and unsupervised anomaly detection**. The system ingests real-time data from INGV catalogs and processes them through a reproducible pipeline with recursive validation.
