@@ -1,0 +1,77 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Docker Image",
+            "type": "shell",
+            "command": "docker build -t flegrei-alert .",
+            "group": "build"
+        },
+        {
+            "label": "Generate Report (RMarkdown)",
+            "type": "process",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/app",
+                "flegrei-alert",
+                "Rscript",
+                "-e",
+                "rmarkdown::render('notebook/report.Rmd')"
+            ],
+            "group": "build",
+            "dependsOn": "Build Docker Image"
+        },
+        {
+            "label": "Run All Analysis",
+            "type": "process",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/app",
+                "flegrei-alert",
+                "sh",
+                "-c",
+                "Rscript scripts/gnss_analysis.R && python3 scripts/seismic_hawkes.py && Rscript scripts/geo_chemistry.R"
+            ],
+            "group": "test",
+            "dependsOn": "Build Docker Image"
+        },
+        {
+            "label": "Import & Clean Data (Real)",
+            "type": "process",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/app",
+                "flegrei-alert",
+                "python3",
+                "scripts/import_data.py"
+            ],
+            "group": "build",
+            "dependsOn": "Build Docker Image"
+        },
+        {
+            "label": "Download Data (Web)",
+            "type": "process",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/app",
+                "flegrei-alert",
+                "python3",
+                "scripts/download_data.py"
+            ],
+            "group": "build",
+            "dependsOn": "Build Docker Image"
+        }
+    ]
+}

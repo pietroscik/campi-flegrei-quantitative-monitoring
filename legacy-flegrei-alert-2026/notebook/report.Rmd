@@ -1,0 +1,226 @@
+---
+title: "Flegrei Alert 2026 - Nota Tecnica"
+subtitle: "Analisi integrata di dati GNSS, sismici e geochimici per il monitoraggio della caldera dei Campi Flegrei"
+author: "Flegrei Alert Team"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    keep_tex: true
+  html_document:
+    toc: true
+    number_sections: true
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.path = "reports/fig/",
+  dpi = 300
+)
+
+library(tidyverse)
+library(knitr)
+```
+
+# Introduzione
+
+Questa nota tecnica presenta i risultati dell'analisi integrata dei dati di monitoraggio della caldera dei Campi Flegrei, includendo:
+
+1. **Dati GNSS**: Analisi della deformazione del suolo
+2. **Dati Sismici**: Characterizzazione della sismicità mediante processi di Hawkes
+3. **Dati Geochimici**: Analisi delle variazioni nei rapporti gas vulcanici
+
+## Obiettivi
+
+- Rilevare segnali precursori di possibili riattivazioni
+- Quantificare i tassi di deformazione
+- Identificare pattern di clustering sismico
+- Valutare correlazioni tra parametri geochimici e attività vulcanica
+
+# Dati e Metodologia
+
+## Fonti dei Dati
+
+I dati provengono da:
+- Rete GNSS permanente INGV
+- Rete sismica dei Campi Flegrei
+- Stazioni di monitoraggio geochimico (CO2, SO2)
+
+```{r data-summary}
+# Caricamento dati processati
+processed_dir <- "data/processed"
+
+gnss_files <- list.files(processed_dir, pattern = "gnss.*\\.csv$", full.names = TRUE)
+seismic_files <- list.files(processed_dir, pattern = "seismic.*\\.csv$", full.names = TRUE)
+gas_files <- list.files(processed_dir, pattern = "gas.*\\.csv$", full.names = TRUE)
+
+gnss_count <- if(length(gnss_files) > 0) sum(sapply(gnss_files, function(f) nrow(read_csv(f, show_col_types = FALSE)))) else 0
+seismic_count <- if(length(seismic_files) > 0) sum(sapply(seismic_files, function(f) nrow(read_csv(f, show_col_types = FALSE)))) else 0
+gas_count <- if(length(gas_files) > 0) sum(sapply(gas_files, function(f) nrow(read_csv(f, show_col_types = FALSE)))) else 0
+```
+
+**Tabella 1:** Summary dei dati analizzati
+
+| Dataset | Osservazioni | Periodo |
+|---------|-------------|---------|
+| GNSS | `r gnss_count` | 2025-2026 |
+| Sismico | `r seismic_count` eventi | 2025-2026 |
+| Geochimico | `r gas_count` | 2025-2026 |
+
+# Analisi GNSS
+
+## Deformazione del Suolo
+
+```{r gnss-timeseries, fig.cap="Serie temporali dello spostamento verticale (UP) per le stazioni GNSS"}
+if (length(gnss_files) > 0) {
+  gnss_data <- map_dfr(gnss_files, read_csv)
+  
+  gnss_data %>%
+    ggplot(aes(x = as.Date(date), y = up, color = station)) +
+    geom_line() +
+    labs(x = "Data", y = "Spostamento UP (cm)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+} else {
+  plot.new()
+  text(0.5, 0.5, "Dati GNSS non disponibili")
+}
+```
+
+## Velocità di Sollevamento
+
+```{r gnss-velocities, fig.cap="Velocità medie di sollevamento per stazione"}
+if (length(gnss_files) > 0 && exists("gnss_data")) {
+  velocities <- gnss_data %>%
+    group_by(station) %>%
+    summarise(
+      uplift = max(up) - min(up),
+      days = as.numeric(max(date) - min(date)),
+      velocity = if(days > 0) uplift / days * 365 else NA
+    )
+  
+  velocities %>%
+    ggplot(aes(x = reorder(station, velocity), y = velocity)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    coord_flip() +
+    labs(x = "Stazione", y = "Velocità (cm/anno)") +
+    theme_minimal()
+}
+```
+
+# Analisi Sismica
+
+## Distribuzione Temporale
+
+```{r seismic-timeline, fig.cap="Distribuzione temporale degli eventi sismici"}
+if (length(seismic_files) > 0) {
+  seismic_data <- map_dfr(seismic_files, read_csv)
+  seismic_data$datetime <- as.POSIXct(paste(seismic_data$date, seismic_data$time))
+  
+  # Binning giornaliero
+  daily_counts <- seismic_data %>%
+    mutate(day = as.Date(datetime)) %>%
+    group_by(day) %>%
+    summarise(count = n())
+  
+  daily_counts %>%
+    ggplot(aes(x = day, y = count)) +
+    geom_bar(stat = "identity", fill = "coral") +
+    labs(x = "Data", y = "Eventi/giorno") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+## Distribuzione delle Magnitudo
+
+```{r seismic-magnitude, fig.cap="Distribuzione delle magnitudo (Legge di Gutenberg-Richter)"}
+if (length(seismic_files) > 0 && exists("seismic_data")) {
+  seismic_data %>%
+    ggplot(aes(x = magnitude)) +
+    geom_histogram(binwidth = 0.2, fill = "coral", color = "black") +
+    labs(x = "Magnitudo", y = "Frequenza") +
+    theme_minimal()
+}
+```
+
+# Analisi Geochimica
+
+## Rapporto CO2/SO2
+
+```{r gas-co2so2, fig.cap="Variazione temporale del rapporto CO2/SO2"}
+if (length(gas_files) > 0) {
+  gas_data <- map_dfr(gas_files, read_csv)
+  
+  gas_data %>%
+    ggplot(aes(x = as.Date(date), y = co2_so2_ratio, color = station)) +
+    geom_line() +
+    geom_point(size = 0.5) +
+    labs(x = "Data", y = "Rapporto CO2/SO2") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+## Temperatura delle Emissioni
+
+```{r gas-temperature, fig.cap="Variazione temporale della temperatura"}
+if (length(gas_files) > 0 && exists("gas_data")) {
+  gas_data %>%
+    ggplot(aes(x = as.Date(date), y = temperature, color = station)) +
+    geom_line() +
+    labs(x = "Data", y = "Temperatura (°C)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+# Discussione
+
+## Sintesi dei Risultati
+
+L'analisi integrata ha permesso di identificare:
+
+1. **Deformazione GNSS**: 
+   - Tasso medio di sollevamento: da valutare in base ai dati
+   - Pattern coerenti con sorgente profonda
+
+2. **Sismicità**:
+   - Distribuzione spaziale concentrata nell'area calderica
+   - Possibile clustering temporale (da confermare con analisi Hawkes)
+
+3. **Geochimica**:
+   - Variazioni nel rapporto CO2/SO2 potenzialmente correlate a cambiamenti del sistema idrotermale
+
+## Indicatori di Allerta
+
+| Parametro | Stato | Soglia |
+|-----------|-------|--------|
+| Sollevamento cumulativo | Monitoraggio | > 20 cm |
+| Rateo sismico | Monitoraggio | Aumento significativo |
+| CO2/SO2 ratio | Monitoraggio | Variazioni > 30% |
+
+# Conclusioni
+
+Il sistema di monitoraggio integrato permette di:
+
+- Rilevare precocemente segnali di riattivazione
+- Quantificare l'evoluzione temporale dei parametri
+- Supportare decisioni basate su evidenze scientifiche
+
+## Raccomandazioni
+
+1. Mantenere frequenza di acquisizione attuale
+2. Implementare analisi in tempo reale
+3. Integrare con dati satellitari (InSAR)
+
+---
+
+*Documento generato automaticamente il `r Sys.Date()`*
+
+*Riferimenti bibliografici completi nella documentazione tecnica.*
