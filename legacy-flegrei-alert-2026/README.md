@@ -1,6 +1,6 @@
 # Legacy: Flegrei_Alert_2026
 
-This folder consolidates the unique content of the archived repository [`Flegrei_Alert_2026`](https://github.com/pietroscik/Flegrei_Alert_2026), which documented the same Campi Flegrei monitoring system with an operational (IT-language) focus while this repository carries the scientific/production version (CI, tests, CITATION).
+This folder consolidates the unique content of `Flegrei_Alert_2026` (now a private repository), which documented the same Campi Flegrei monitoring system with an operational (IT-language) focus while this repository carries the scientific/production version (CI, tests, CITATION).
 
 ## Contents
 
