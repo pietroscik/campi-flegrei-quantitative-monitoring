@@ -27,6 +27,10 @@ library(tidyverse)
 library(knitr)
 ```
 
+# Abstract
+
+This technical note presents an integrated quantitative monitoring analysis of the Campi Flegrei caldera, combining GNSS ground-deformation (uplift) and seismic-catalog data from public INGV services. Data acquisition and preprocessing produced a checksummed raw archive (SHA-256), a GOSSIP relocated-catalog extract for 17-18 February 2026 (events #51673, #51676, #51678, #51684), and cleaned catalogs. Change-point analysis of the GNSS uplift series (PELT, cross-checked with Bai-Perron binary segmentation, bootstrap 95% CI, B=1000) identified multiple regime shifts; a Weibull fit to inter-event times gives shape beta = 0.367 < 1 (clustered seismicity); a Hawkes/ETAS model confirms self-excitation (AIC 24.5 vs 360.4 for a homogeneous Poisson process on the same 180-day window). Monte-Carlo uncertainty propagation (B=1000) on the stress yield point (0.869 m, 95% CI [0.847, 0.893]) estimates P(margin>0) = 0.993 and P(exceeding yield + 2 sigma within 30 days) = 0.264. Geochemical analyses remain pending (no machine-readable INGV-OV gas bulletins).
+
 # Introduzione
 
 Questa nota tecnica presenta i risultati dell'analisi integrata dei dati di monitoraggio della caldera dei Campi Flegrei, includendo:

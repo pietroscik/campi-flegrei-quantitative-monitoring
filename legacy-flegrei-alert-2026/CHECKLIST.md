@@ -25,11 +25,11 @@
 - [x] **3.7** **Integrazione:** Propagazione incertezza (Monte-Carlo) per soglie di stress (Yield Point) — B=1000: yield point (media post-ultimo-CP) = 0,869 [CI95 0,847–0,893], P(margin>0)=0,993, P(superamento yield+2σ entro 30 gg)=0,264 → `data/processed/montecarlo_stress_threshold.csv`.
 
 ## 🟣 Fase 4: Reporting & Visualizzazione (Giorno 6)
-- [ ] **4.1** Generare grafici finali (PNG 300dpi) in `reports/fig/` (Time-series, Hazard Function, Phase-space).
-- [ ] **4.2** Compilare `notebook/report.Rmd` e knittare in PDF (`reports/Flegrei_Alert_2026.pdf`).
-- [ ] **4.3** Inserire Abstract in Inglese nella nota tecnica.
-- [ ] **4.4** Verificare unità di misura in tutte le tabelle (mm/mese, MPa, etc.).
-- [ ] **4.5** Creare `DataPackage.zip` (≤10 MB) con CSV processati e metadata.
+- [x] **4.1** Generare grafici finali (PNG 300dpi) in `reports/fig/` (Time-series, Hazard Function, Phase-space) — 4 figure SVG resolution-independent in `reports/fig/` (`fig1_uplift_changepoints`, `fig2_csd_rolling`, `fig3_weibull_hazard`, `fig4_phase_space`) da `scripts/fase4_reporting.py`; i PNG 300dpi di pipeline sono in `figures/` (matplotlib in CI) e il Rmd usa `fig.path="reports/fig/"` con `dpi=300`.
+- [ ] **4.2** Compilare `notebook/report.Rmd` e knittare in PDF (`reports/Flegrei_Alert_2026.pdf`) — richiede Docker (R 4.4 + LaTeX), non eseguibile in CI; generata la nota tecnica Markdown `reports/Flegrei_Alert_2026.md`; comando in MANUAL_EXECUTION.md §4.
+- [x] **4.3** Inserire Abstract in Inglese nella nota tecnica — abstract EN in `notebook/report.Rmd` e in `reports/Flegrei_Alert_2026.md`.
+- [x] **4.4** Verificare unità di misura in tutte le tabelle (mm/mese, MPa, etc.) — `reports/units_check.csv` (file x colonna x unita' x range osservato); nota: unita' di `uplift` non dichiarata nella sorgente (assunta m cumulati, da verificare vs INGV).
+- [x] **4.5** Creare `DataPackage.zip` (≤10 MB) con CSV processati e metadata — `reports/DataPackage.zip`: 37 file, 0,64 MB; non committato (`*.zip` in `.gitignore`, policy anti-archivi PR #15), generato da `scripts/fase4_reporting.py`.
 
 ## 🔴 Fase 5: Revisione & Invio (Giorno 7)
 - [ ] **5.1** Dry-run completo della pipeline (da Docker start a PDF generation).
