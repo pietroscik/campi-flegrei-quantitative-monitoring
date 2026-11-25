@@ -105,7 +105,7 @@ alerts:
 ### Opzione 1: Variabili d'Ambiente (Consigliato)
 
 ```bash
-export TELEGRAM_BOT_TOKEN="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+export TELEGRAM_BOT_TOKEN="ESEMPIO_TOKEN_FITTIZIO_NON_VALIDO"
 export TELEGRAM_CHAT_ID="-1001234567890"
 ```
 
@@ -114,7 +114,7 @@ export TELEGRAM_CHAT_ID="-1001234567890"
 Modifica `config.yaml`:
 ```yaml
 alerts:
-  telegram_bot_token: "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+  telegram_bot_token: "ESEMPIO_TOKEN_FITTIZIO_NON_VALIDO"  # esempio fittizio, sostituire con il token reale via env var
   telegram_chat_id: "-1001234567890"
 ```
 
