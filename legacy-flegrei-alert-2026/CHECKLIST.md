@@ -32,9 +32,9 @@
 - [x] **4.5** Creare `DataPackage.zip` (≤10 MB) con CSV processati e metadata — `reports/DataPackage.zip`: 37 file, 0,64 MB; non committato (`*.zip` in `.gitignore`, policy anti-archivi PR #15), generato da `scripts/fase4_reporting.py`.
 
 ## 🔴 Fase 5: Revisione & Invio (Giorno 7)
-- [ ] **5.1** Dry-run completo della pipeline (da Docker start a PDF generation).
-- [ ] **5.2** Revisione pari (invio bozza a 1 collega geodeta/sismologo per feedback rapido).
-- [ ] **5.3** Preparare email per Dott. De Martino, Dott. Di Vito, Dott.ssa Pappalardo.
-- [ ] **5.4** Caricare dataset e codice su **Zenodo** (ottenere DOI) per archiviazione permanente.
-- [ ] **5.5** Invio Nota Tecnica + Allegati.
-- [ ] **5.6** Calendarizzare follow-up (email di cortesia dopo 5 gg lavorativi).
+- [x] **5.1** Dry-run completo della pipeline (da Docker start a PDF generation) — dry-run della catena riproducibile fase2→fase3→fase4: 3 script PASS, 19/19 check PASS (SHA-256, artefatti, DataPackage.zip 0,64 MB ≤ 10 MB) → `reports/dry_run_report.md`. La parte Docker start→PDF resta pending (daemon Docker non disponibile in CI; eseguire via MANUAL_EXECUTION.md §§1-4).
+- [ ] **5.2** Revisione pari (invio bozza a 1 collega geodeta/sismologo per feedback rapido) — bozza pronta in `reports/peer_review_request.md`; invio manuale (non inviata dall'agent).
+- [x] **5.3** Preparare email per Dott. De Martino, Dott. Di Vito, Dott.ssa Pappalardo — bozza in `reports/email_draft.md` (con abstract EN e lista allegati); invio NON eseguito: richiede approvazione esplicita e va fatto manualmente.
+- [ ] **5.4** Caricare dataset e codice su **Zenodo** (ottenere DOI) per archiviazione permanente — metadati bozza in `reports/zenodo_deposit.json`; upload NON eseguito (publishing su servizio esterno richiede approvazione esplicita); DOI da registrare dopo l'upload.
+- [ ] **5.5** Invio Nota Tecnica + Allegati — manuale, dopo 5.2 e 5.4 (allegati: `reports/Flegrei_Alert_2026.pdf` da knit Docker, `reports/DataPackage.zip`).
+- [ ] **5.6** Calendarizzare follow-up (email di cortesia dopo 5 gg lavorativi) — manuale, dopo l'invio 5.5.
