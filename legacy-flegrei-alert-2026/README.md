@@ -19,3 +19,4 @@ This folder consolidates the unique content of `Flegrei_Alert_2026` (now a priva
 - `data/raw/uplift.csv` — INGV GNSS uplift series (Fase 2.1, da `data/external/uplift.csv`).
 - `data/raw/SHA256SUMS.txt` — SHA-256 dei file in `data/raw/` (Fase 2.2).
 - Fase 3 (analisi statistica, `scripts/fase3_analisi_statistica.py`): output in `data/processed/` — `gnss_changepoints.csv` (PELT + Bai-Perron + bootstrap CI), `csd_gnss_rolling.csv`, `iet_weibull.csv`, `hawkes_etas_fit.csv`, `montecarlo_stress_threshold.csv`, `geochemistry_status.csv` (3.5/3.6 bloccati: no dati gas).
+- Fase 4 (reporting, `scripts/fase4_reporting.py`): figure in `reports/fig/*.svg`, nota tecnica `reports/Flegrei_Alert_2026.md` (abstract EN; PDF via Rmd/Docker pending), `reports/units_check.csv`, `reports/DataPackage.zip` (generato, non committato).

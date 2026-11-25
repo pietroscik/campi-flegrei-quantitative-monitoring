@@ -1,0 +1,39 @@
+file,colonna,unita,min_osservato,max_osservato,verifica
+catalog_gossip_20260217_20260218.csv,time,ISO8601 UTC,,,non numerico/testuale
+catalog_gossip_20260217_20260218.csv,lat,deg,40.8338,40.8443,OK
+catalog_gossip_20260217_20260218.csv,lon,deg,14.1165,14.1257,OK
+catalog_gossip_20260217_20260218.csv,depth,m,2170,2910,OK
+catalog_gossip_20260217_20260218.csv,magnitude,Mw (adimensionale),1.3,2.8,OK
+catalog_gossip_20260217_20260218.csv,event_id,INGV/GOSSIP id,51673,51684,OK
+catalog_gossip_20260217_20260218.csv,place,testo,,,non numerico/testuale
+catalog_clean_ingv_events.csv,time,ISO8601 UTC,,,non numerico/testuale
+catalog_clean_ingv_events.csv,magnitude,Mw (adimensionale),1,4.6,OK
+catalog_clean_ingv_events.csv,depth,m,,,non numerico/testuale
+catalog_clean_ingv_events.csv,longitude,deg,14.067,14.2102,OK
+catalog_clean_ingv_events.csv,latitude,deg,40.7852,40.923,OK
+catalog_clean_ingv_events.csv,event_id,INGV id,1.82106e+06,4.59277e+07,OK
+catalog_clean_ingv_events.csv,place,testo,,,non numerico/testuale
+uplift.csv,time,data (YYYY-MM-DD),,,non numerico/testuale
+uplift.csv,uplift,m (spostamento verticale cumulato; unita' non dichiarata nella sorgente - verificare vs INGV),0.417336,0.937637,OK
+uplift_clean.csv,time,data (YYYY-MM-DD),,,non numerico/testuale
+uplift_clean.csv,uplift,m (come uplift.csv),0.417336,0.937637,OK
+csd_gnss_rolling.csv,time,data,,,non numerico/testuale
+csd_gnss_rolling.csv,csd,m^2 (cumulata degli incrementi^2),0,1.73566,OK
+csd_gnss_rolling.csv,rolling_var,m^4 (varianza rolling 30d di CSD),0.00021695,0.0054801,OK
+csd_gnss_rolling.csv,rolling_ac1,"adimensionale [-1,1]",0.9442,0.9948,OK
+gnss_changepoints.csv,cp_index,indice giorno (adimensionale),53,350,OK
+gnss_changepoints.csv,date,data,,,non numerico/testuale
+gnss_changepoints.csv,mean_before/after,m (unita' uplift),0.5147,0.9016,OK
+gnss_changepoints.csv,ci_*,indice/data,,,non numerico/testuale
+iet_weibull.csv,weibull_shape_beta,adimensionale,0.3671,0.3671,OK
+iet_weibull.csv,weibull_scale_lambda_h,h,7.0104,7.0104,OK
+iet_weibull.csv,loglik/aic,adimensionale,-7573.31,-7573.31,OK
+hawkes_etas_fit.csv,mu,eventi/giorno,0.52952,0.52952,OK
+hawkes_etas_fit.csv,K,adimensionale,0.022472,0.022472,OK
+hawkes_etas_fit.csv,alpha,1/Mw,0.398,0.398,OK
+hawkes_etas_fit.csv,c_days,giorni,0.00052,0.00052,OK
+hawkes_etas_fit.csv,p,adimensionale (>1),1.0904,1.0904,OK
+montecarlo_stress_threshold.csv,yield_level/margin,m (unita' uplift),,,non numerico/testuale
+montecarlo_stress_threshold.csv,p_*,"probabilita' [0,1]",,,non numerico/testuale
+montecarlo_stress_threshold.csv,post_cp_drift_per_day,m/giorno,,,non numerico/testuale
+montecarlo_stress_threshold.csv,sigma_pre_cp,m,,,non numerico/testuale
