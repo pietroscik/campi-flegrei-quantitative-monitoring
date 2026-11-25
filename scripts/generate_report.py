@@ -45,12 +45,10 @@ L'attività sismica nella caldera dei Campi Flegrei mostra attualmente un Indice
 Si raccomanda di mantenere l'attenzione sui futuri aggiornamenti del modello per cogliere deviazioni repentine rispetto alla previsione della rete neurale.
 """
 
-    import os
-    os.makedirs("reports/operational", exist_ok=True)
-    with open("reports/operational/weekly_report.md", "w", encoding="utf-8") as f:
+    with open("reports/weekly_report.md", "w", encoding="utf-8") as f:
         f.write(report_md)
-
-    print("[OK] Report generato con successo in reports/operational/weekly_report.md")
+        
+    print("[OK] Report generato con successo in reports/weekly_report.md")
 
 if __name__ == "__main__":
     generate()

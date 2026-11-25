@@ -186,7 +186,7 @@ try:
                 st.info("Dati anomalie Deep Learning non disponibili.")
 
     with tab4:
-        report_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reports", "operational", "weekly_report.md"))
+        report_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reports", "weekly_report.md"))
         if os.path.exists(report_path):
             with open(report_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read())
