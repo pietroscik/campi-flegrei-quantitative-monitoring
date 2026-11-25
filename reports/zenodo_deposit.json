@@ -1,0 +1,28 @@
+{
+  "title": "Flegrei Alert 2026 - DataPackage (nota tecnica Campi Flegrei)",
+  "upload_type": "dataset",
+  "description": "CSV processati e metadata della nota tecnica Flegrei Alert 2026: catalogo INGV pulito (2505 eventi, bounding box Campi Flegrei), estratto GOSSIP 17-18/02/2026, uplift GNSS, change-point, CSD, Weibull IET, Hawkes/ETAS, Monte-Carlo soglie di stress. Licenza CC-BY-4.0 (dati originali INGV).",
+  "creators": [
+    {
+      "name": "Flegrei Alert Team"
+    }
+  ],
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "Campi Flegrei",
+    "GNSS",
+    "seismic catalog",
+    "Hawkes ETAS",
+    "change-point",
+    "Weibull",
+    "INGV"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.13127/gossip",
+      "relation": "isDerivedFrom",
+      "scheme": "doi"
+    }
+  ],
+  "notes": "BOZZA metadati - upload su Zenodo NON eseguito: publishing su servizio esterno richiede approvazione esplicita. File: reports/DataPackage.zip (0.64 MB)."
+}
