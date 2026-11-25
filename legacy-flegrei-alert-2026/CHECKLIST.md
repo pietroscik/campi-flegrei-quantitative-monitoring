@@ -16,13 +16,13 @@
 - [x] **2.6** Verificare outlier GNSS (rimozione manuale o automatica con IQR) — IQR su `uplift.csv`: soglie [0.2990, 1.0677], 0 outlier su 365 giorni; report in `data/processed/uplift_outliers.csv`.
 
 ## 🟠 Fase 3: Analisi Statistica Avanzata (Giorni 3-5)
-- [ ] **3.1** **Geodesia:** Calcolare change-point (PELT & Bai-Perron) con **Bootstrap CI (1000 replicates)**.
-- [ ] **3.2** **Geodesia:** Calcolare Rolling Variance e Autocorrelazione (lag-1) per indicatore CSD.
-- [ ] **3.3** **Sismologia:** Fit distribuzione Weibull sugli IET (verificare β > 1).
-- [ ] **3.4** **Sismologia:** Implementare modello **Hawkes (ETAS)** per confermare auto-eccitazione (confronto AIC con Weibull).
-- [ ] **3.5** **Geochimica:** Test Engle-Granger e Johansen per cointegrazione Gas vs Deformazione.
-- [ ] **3.6** **Geochimica:** Test Causalità di Granger (lag=7gg) per direzione influenza.
-- [ ] **3.7** **Integrazione:** Propagazione incertezza (Monte-Carlo) per soglie di stress (Yield Point).
+- [x] **3.1** **Geodesia:** Calcolare change-point (PELT & Bai-Perron) con **Bootstrap CI (1000 replicates)** — PELT su `data/raw/uplift.csv`: 8 change-point (2025-07-14 … 2026-05-07), cross-check Bai-Perron (binary segmentation) con 7 CP concordi; bootstrap B=1000 con CI 95% per posizione → `data/processed/gnss_changepoints.csv`.
+- [x] **3.2** **Geodesia:** Calcolare Rolling Variance e Autocorrelazione (lag-1) per indicatore CSD — CSD cumulato sugli incrementi giornalieri di uplift, rolling var e ac1 (finestra 30 gg) → `data/processed/csd_gnss_rolling.csv` (ac1 ~0.99: forte persistenza).
+- [x] **3.3** **Sismologia:** Fit distribuzione Weibull sugli IET (verificare β > 1) — MLE su 2504 IET del catalogo: **β = 0,367 (< 1, hazard decrescente → clustering)**, λ = 7,01 h; AIC Weibull 15150,6 vs esponenziale 25752,8 → `data/processed/iet_weibull.csv`.
+- [x] **3.4** **Sismologia:** Implementare modello **Hawkes (ETAS)** per confermare auto-eccitazione (confronto AIC con Weibull) — Hawkes a kernel esponenziale (μ, K, α, c, p) su finestra 180 gg (191 eventi): AIC Hawkes 24,5 vs Poisson 360,4 (stessa likelihood) → **auto-eccitazione confermata**; AIC Weibull sugli IET della stessa finestra (1286,9) riportato come riferimento → `data/processed/hawkes_etas_fit.csv`.
+- [ ] **3.5** **Geochimica:** Test Engle-Granger e Johansen per cointegrazione Gas vs Deformazione — **bloccato**: nessun dato gas (task 2.4 manuale, bollettini INGV-OV); vedi `data/processed/geochemistry_status.csv`.
+- [ ] **3.6** **Geochimica:** Test Causalità di Granger (lag=7gg) per direzione influenza — **bloccato** come 3.5.
+- [x] **3.7** **Integrazione:** Propagazione incertezza (Monte-Carlo) per soglie di stress (Yield Point) — B=1000: yield point (media post-ultimo-CP) = 0,869 [CI95 0,847–0,893], P(margin>0)=0,993, P(superamento yield+2σ entro 30 gg)=0,264 → `data/processed/montecarlo_stress_threshold.csv`.
 
 ## 🟣 Fase 4: Reporting & Visualizzazione (Giorno 6)
 - [ ] **4.1** Generare grafici finali (PNG 300dpi) in `reports/fig/` (Time-series, Hazard Function, Phase-space).

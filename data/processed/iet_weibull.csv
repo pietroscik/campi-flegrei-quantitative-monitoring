@@ -1,0 +1,2 @@
+n_iet,weibull_shape_beta,weibull_scale_lambda_h,loglik_weibull,aic_weibull,aic_exponential,beta_gt_1
+2504,0.3671,7.0104,-7573.31,15150.61,25752.80,False
