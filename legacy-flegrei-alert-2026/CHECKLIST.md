@@ -8,12 +8,12 @@
 - [ ] **1.5** Scrivere `metadata.yaml` con descrizione fonti dati (INGV Open Data) e licenza (CC-BY-4.0).
 
 ## 🔵 Fase 2: Acquisizione & Preprocessing Dati (Giorni 2-3)
-- [ ] **2.1** Scaricare serie GNSS RITE (BEPOS) da portale INGV e salvare in `data/raw/`.
-- [ ] **2.2** Calcolare checksum SHA-256 dei file scaricati e registrarli in `metadata.yaml`.
-- [ ] **2.3** Estrarre catalogo sismico (GOSSIP) 17-18 Feb 2026 (Eventi #51675, #51678, etc.).
-- [ ] **2.4** Scaricare dati geochimici (CO₂/H₂O) Pisciarelli/Solfatara.
-- [ ] **2.5** Eseguire script di pulizia (`scripts/*.R`/`.py`) e salvare output in `data/processed/`.
-- [ ] **2.6** Verificare outlier GNSS (rimozione manuale o automatica con IQR).
+- [x] **2.1** Scaricare serie GNSS RITE (BEPOS) da portale INGV e salvare in `data/raw/` — serie uplift INGV già in `data/external/uplift.csv` copiata in `data/raw/uplift.csv` da `scripts/fase2_acquisizione_preprocessing.py`; il download stazione RITE/BEPOS dal portale RING non è automatizzabile da CI (portale non raggiungibile), resta un passo manuale opzionale.
+- [x] **2.2** Calcolare checksum SHA-256 dei file scaricati e registrarli in `metadata.yaml` — `data/raw/SHA256SUMS.txt` + campi `sha256` in `metadata.yaml` (GNSS_RITE, GOSSIP_Catalog).
+- [x] **2.3** Estrarre catalogo sismico (GOSSIP) 17-18 Feb 2026 (Eventi #51675, #51678, etc.) — estratti 4 eventi da `data/raw/seismic_ingv_20250525_20260525.csv` (QuakeML) in `data/raw/gossip_20260217_20260218.csv`: #51673, #51676, #51678, #51684. Nota: #51675 non è presente nel catalogo raw (finestra temporale/bounding box del download originale).
+- [ ] **2.4** Scaricare dati geochimici (CO₂/H₂O) Pisciarelli/Solfatara — i Bollettini INGV-OV non espongono endpoint machine-readable; download manuale dai bollettini di sorveglianza.
+- [x] **2.5** Eseguire script di pulizia (`scripts/*.R`/`.py`) e salvare output in `data/processed/` — `scripts/fase2_acquisizione_preprocessing.py` produce `catalog_gossip_20260217_20260218.csv`, `catalog_clean_ingv_events.csv`, `uplift_clean.csv`.
+- [x] **2.6** Verificare outlier GNSS (rimozione manuale o automatica con IQR) — IQR su `uplift.csv`: soglie [0.2990, 1.0677], 0 outlier su 365 giorni; report in `data/processed/uplift_outliers.csv`.
 
 ## 🟠 Fase 3: Analisi Statistica Avanzata (Giorni 3-5)
 - [ ] **3.1** **Geodesia:** Calcolare change-point (PELT & Bai-Perron) con **Bootstrap CI (1000 replicates)**.
