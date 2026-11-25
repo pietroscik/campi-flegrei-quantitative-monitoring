@@ -1,0 +1,7 @@
+metric,value,ci_lower_95,ci_upper_95
+yield_level,0.869286,0.847127,0.892743
+margin_last_vs_yield,0.029221,0.006509,0.052019
+p_margin_positive,0.993000,,
+p_exceed_yield_plus_2sigma_in_30d,0.264000,,
+post_cp_drift_per_day,0.001082,,
+sigma_pre_cp,0.113822,,

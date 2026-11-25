@@ -18,3 +18,4 @@ This folder consolidates the unique content of `Flegrei_Alert_2026` (now a priva
 - `data/raw/gossip_20260217_20260218.csv` — GOSSIP catalog extract 17–18 Feb 2026 (Fase 2.3: eventi #51673, #51676, #51678, #51684).
 - `data/raw/uplift.csv` — INGV GNSS uplift series (Fase 2.1, da `data/external/uplift.csv`).
 - `data/raw/SHA256SUMS.txt` — SHA-256 dei file in `data/raw/` (Fase 2.2).
+- Fase 3 (analisi statistica, `scripts/fase3_analisi_statistica.py`): output in `data/processed/` — `gnss_changepoints.csv` (PELT + Bai-Perron + bootstrap CI), `csd_gnss_rolling.csv`, `iet_weibull.csv`, `hawkes_etas_fit.csv`, `montecarlo_stress_threshold.csv`, `geochemistry_status.csv` (3.5/3.6 bloccati: no dati gas).

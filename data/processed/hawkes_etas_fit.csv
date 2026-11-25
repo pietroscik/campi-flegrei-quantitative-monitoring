@@ -1,0 +1,2 @@
+window_days,n_events,mu,K,alpha,c_days,p,loglik_hawkes,aic_hawkes,aic_poisson,aic_weibull_same_window,autoexcitation_confirmed
+180,191,0.529520,0.022472,0.3980,0.000520,1.0904,-7.26,24.52,360.45,1286.89,True
