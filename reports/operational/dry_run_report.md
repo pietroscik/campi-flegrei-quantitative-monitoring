@@ -26,7 +26,7 @@ Data: 2026-11-25 17:23:21
 | artefatto data/processed/iet_weibull.csv | PASS |
 | artefatto data/processed/hawkes_etas_fit.csv | PASS |
 | artefatto data/processed/montecarlo_stress_threshold.csv | PASS |
-| artefatto reports/Flegrei_Alert_2026.md | PASS |
+| artefatto reports/operational/Flegrei_Alert_2026.md | PASS |
 | artefatto reports/units_check.csv | PASS |
 | artefatto reports/fig/fig1_uplift_changepoints.svg | PASS |
 | artefatto reports/fig/fig2_csd_rolling.svg | PASS |

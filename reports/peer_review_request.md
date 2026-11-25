@@ -5,7 +5,7 @@ Oggetto: Peer review bozza "Flegrei Alert 2026 - Nota Tecnica" (Campi Flegrei)
 
 Ciao,
 
-ti invio in bozza la nota tecnica Flegrei Alert 2026 (reports/Flegrei_Alert_2026.md, figure in reports/fig/, DataPackage.zip) per una revisione rapida (dry-run in reports/dry_run_report.md).
+ti invio in bozza la nota tecnica Flegrei Alert 2026 (reports/operational/Flegrei_Alert_2026.md, figure in reports/fig/, DataPackage.zip) per una revisione rapida (dry-run in reports/operational/dry_run_report.md).
 
 Punti su cui chiedo feedback:
 1. Change-point GNSS (PELT/Bai-Perron + bootstrap B=1000): soglie e CI sono robuste?
