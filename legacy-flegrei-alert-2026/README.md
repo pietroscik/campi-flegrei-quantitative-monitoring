@@ -13,4 +13,8 @@ This folder consolidates the unique content of `Flegrei_Alert_2026` (now a priva
 
 ## Related data
 
-- `data/raw/seismic_ingv_20250525_20260525.csv` — raw INGV seismic catalog (1-year window) used by the legacy pipeline.
+- `data/raw/seismic_ingv_20250525_20260525.csv` — raw INGV seismic catalog (1-year window, QuakeML) used by the legacy pipeline.
+- `data/raw/ingv_events.csv` — raw INGV event CSV catalog (2008 → 2026-05).
+- `data/raw/gossip_20260217_20260218.csv` — GOSSIP catalog extract 17–18 Feb 2026 (Fase 2.3: eventi #51673, #51676, #51678, #51684).
+- `data/raw/uplift.csv` — INGV GNSS uplift series (Fase 2.1, da `data/external/uplift.csv`).
+- `data/raw/SHA256SUMS.txt` — SHA-256 dei file in `data/raw/` (Fase 2.2).
