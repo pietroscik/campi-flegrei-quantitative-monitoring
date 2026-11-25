@@ -1,6 +1,6 @@
 # Dry-run Fase 5 - catena riproducibile
 
-Data: 2026-11-25 17:23:21
+Data: 2026-11-25 17:59:05
 
 ## Esecuzione script
 
