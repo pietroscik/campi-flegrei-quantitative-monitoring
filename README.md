@@ -82,20 +82,24 @@ Two complementary methods identify b-value anomalies:
 
 **Combined anomaly score**: Sum of Z-score and quantile indicators (range: 0–2).
 
+These parameters (rolling window = 50 samples, |Z| > 2, 5th/95th percentiles) are the ones actually applied: they are hard-coded in `src/analysis/anomaly_bvalue.py` (`anomaly_score(df, window=50)`), while the `anomaly:` block in `config.yaml` is currently not consumed by the pipeline.
+
 ### 2.5 Multi-Signal Fusion
 
 Three independent signals are integrated into a composite unrest index:
 
-1. **Seismicity rate**: Daily event count from catalog
-2. **b-value**: Rolling estimate from Section 2.3
-3. **Ground uplift**: Vertical displacement from GNSS station RITE (or equivalent)
+1. **Seismicity rate**: events per day over rolling 30-day windows (7-day step, minimum 10 events per window)
+2. **b-value**: rolling event-based estimate from Section 2.3, aligned to the rate time grid by nearest-neighbour
+3. **Ground uplift**: vertical displacement from GNSS station RITE (or equivalent), if available
 
-Signals are normalized using z-score normalization:
-$$X_{norm} = \frac{X - \mu_X}{\sigma_X}$$
+Signals are normalized with robust scaling (median and MAD):
+$$X_{norm} = \frac{X - \mathrm{median}(X)}{\mathrm{MAD}(X)}$$
 
-**Unrest Index**:
-$$UI(t) = 0.4 \cdot Rate_{norm}(t) + 0.3 
-\cdot [-b_{norm}(t)] + 0.3 \cdot Uplift_{norm}(t)$$
+**Unrest Index** with default weights (seismic rate = 0.5, b-value = 0.3, uplift = 0.2):
+$$UI(t) = 0.5 \cdot Rate_{norm}(t) + 0.3 
+\cdot [-b_{norm}(t)] + 0.2 \cdot Uplift_{norm}(t)$$
+
+If uplift coverage is below 50% of the time steps, uplift is excluded and the weights are renormalized to rate = 0.625, b-value = 0.375 (as in the reference output `data/processed/unrest_index.csv`).
 
 Note: Negative b-value coefficient reflects inverse relationship (low b-value → high stress).
 
