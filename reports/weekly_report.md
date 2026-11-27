@@ -1,15 +1,15 @@
 # Report di Monitoraggio Sismico - Campi Flegrei
-**Data di riferimento:** 2026-05-02
+**Data di riferimento:** 2026-11-07
 
 ## Sintesi Esecutiva
-L'attività sismica nella caldera dei Campi Flegrei mostra attualmente un Indice di Unrest multi-segnale pari a **-0.37**, corrispondente a uno stato **NORMAL**. 
+L'attività sismica nella caldera dei Campi Flegrei mostra attualmente un Indice di Unrest multi-segnale pari a **0.01**, corrispondente a uno stato **NORMAL**. 
 
 ## 1. Sismicità e Previsioni a Breve Termine (AI)
 - **Trend Attuale**: I tassi di sismicità giornalieri rientrano nella baseline attesa.
-- **Previsione**: La rete neurale LSTM prevede per i prossimi 7 giorni un tasso sismico compreso tra **0.0 e 1.8 eventi/giorno**. Non si attendono sciami di forte intensità a brevissimo termine.
+- **Previsione**: La rete neurale LSTM prevede per i prossimi 7 giorni un tasso sismico compreso tra **0.0 e 1.1 eventi/giorno**. Non si attendono sciami di forte intensità a brevissimo termine.
 
 ## 2. Early Warning System Multi-Segnale
-- **Ultimo Allarme Registrato**: 2025-11-22.
+- **Ultimo Allarme Registrato**: 2026-08-15.
 - Il sistema ibrido (Statistica + Deep Learning) non segnala anomalie imminenti. Le soglie di confidenza dinamiche si sono adattate correttamente all'attuale regime sismico.
 
 ## Conclusioni
